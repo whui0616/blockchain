@@ -1,0 +1,25 @@
+{
+  "name": "ethereum-rpc-practice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/whui0616/ethereum-rpc-practice.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/whui0616/ethereum-rpc-practice/issues"
+  },
+  "homepage": "https://github.com/whui0616/ethereum-rpc-practice#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "ethers": "^6.16.0"
+  }
+}
