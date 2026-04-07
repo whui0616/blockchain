@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sepolia Faucet DApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center py-10">
+
+    <div class="max-w-2xl w-full bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700">
+        <h1 class="text-3xl font-bold text-blue-400 mb-6 text-center">💧 Sepolia Faucet</h1>
+        
+        <div class="flex justify-between items-center mb-6 bg-gray-700 p-4 rounded-lg">
+            <div>
+                <p class="text-sm text-gray-400">내 지갑 주소:</p>
+                <p id="wallet-address" class="text-sm font-mono text-green-400">연결되지 않음</p>
+            </div>
+            <button id="connect-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-bold transition">
+                MetaMask 연결
+            </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+            <div class="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                <p class="text-sm text-gray-400 mb-1">Faucet 남은 잔액</p>
+                <p id="faucet-balance" class="text-2xl font-bold text-blue-300">0.0 ETH</p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                <p class="text-sm text-gray-400 mb-1">1회 지급량</p>
+                <p class="text-2xl font-bold text-yellow-400">0.01 ETH</p>
+            </div>
+        </div>
+
+        <button id="withdraw-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-lg font-bold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed mb-4">
+            🚀 0.01 ETH 받기 (Withdraw)
+        </button>
+
+        <div id="tx-info" class="hidden bg-green-900 border border-green-500 p-4 rounded-lg text-center mb-6">
+            <p class="text-sm text-green-300 mb-1">✅ 트랜잭션 성공!</p>
+            <a id="tx-link" href="#" target="_blank" class="text-xs text-blue-300 hover:underline break-all"></a>
+        </div>
+
+        <div class="bg-gray-700 p-4 rounded-lg border border-gray-600">
+            <h2 class="text-sm text-gray-400 mb-2 text-center">Faucet 잔액 변화 (Bonus Chart)</h2>
+            <canvas id="balanceChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // 1. 배포 후 Remix에서 복사한 컨트랙트 주소 (0x...)를 여기에 넣으세요.
+const CONTRACT_ADDRESS = "0x199dCD9e3cD2AcfcA7F95e9EC97F62D507e9899E"; 
+
+// 2. 방금 보여주신 ABI를 여기에 그대로 붙여넣습니다.
+const ABI =[
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "withdraw",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Withdrawal",
+		"type": "event"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "lastWithdrawalTime",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "LOCK_TIME",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address payable",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "WITHDRAWAL_AMOUNT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+        let provider, signer, contract;
+        let chartInstance;
+        let balanceHistory = [];
+
+        // UI 요소
+        const connectBtn = document.getElementById('connect-btn');
+        const walletAddressEl = document.getElementById('wallet-address');
+        const faucetBalanceEl = document.getElementById('faucet-balance');
+        const withdrawBtn = document.getElementById('withdraw-btn');
+        const txInfo = document.getElementById('tx-info');
+        const txLink = document.getElementById('tx-link');
+
+        // 차트 초기화 (Chart.js)
+        function initChart() {
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Faucet 잔액 (ETH)',
+                        data: [],
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96, 165, 250, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } }, animation: false }
+            });
+        }
+
+        // 지갑 연결 함수
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.send("eth_requestAccounts", []);
+                    signer = await provider.getSigner();
+                    
+                    walletAddressEl.innerText = accounts[0];
+                    connectBtn.innerText = "연결됨";
+                    connectBtn.classList.replace('bg-blue-600', 'bg-green-600');
+                    
+                    // 컨트랙트 연결
+                    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                    await updateFaucetBalance();
+                } catch (error) {
+                    console.error("지갑 연결 실패:", error);
+                    alert("지갑 연결을 거부하셨거나 오류가 발생했습니다.");
+                }
+            } else {
+                alert("MetaMask가 설치되어 있지 않습니다!");
+            }
+        }
+
+        // Faucet 잔액 업데이트 함수
+        async function updateFaucetBalance() {
+            if(!provider) return;
+            const balanceWei = await provider.getBalance(CONTRACT_ADDRESS);
+            const balanceEth = ethers.formatEther(balanceWei);
+            faucetBalanceEl.innerText = `${parseFloat(balanceEth).toFixed(4)} ETH`;
+
+            // 차트 업데이트
+            const timeNow = new Date().toLocaleTimeString();
+            chartInstance.data.labels.push(timeNow);
+            chartInstance.data.datasets[0].data.push(balanceEth);
+            if(chartInstance.data.labels.length > 10) { // 최근 10개만 유지
+                chartInstance.data.labels.shift();
+                chartInstance.data.datasets[0].data.shift();
+            }
+            chartInstance.update();
+        }
+
+        // 출금(Withdraw) 함수
+        async function withdrawTokens() {
+            if (!contract) return alert("먼저 지갑을 연결해주세요!");
+            try {
+                withdrawBtn.disabled = true;
+                withdrawBtn.innerText = "⏳ 트랜잭션 진행 중...";
+                
+                const tx = await contract.withdraw();
+                const receipt = await tx.wait(); // 블록에 기록될 때까지 대기
+                
+                txInfo.classList.remove('hidden');
+                txLink.href = `https://sepolia.etherscan.io/tx/${receipt.hash}`;
+                txLink.innerText = `${receipt.hash} (Etherscan에서 보기)`;
+                
+                await updateFaucetBalance(); // 잔액 새로고침
+                alert("성공적으로 0.01 ETH를 받았습니다!");
+            } catch (error) {
+                console.error(error);
+                alert("오류가 발생했습니다. Faucet에 잔액이 부족하거나 거절되었습니다.");
+            } finally {
+                withdrawBtn.disabled = false;
+                withdrawBtn.innerText = "🚀 0.01 ETH 받기 (Withdraw)";
+            }
+        }
+
+        // 이벤트 리스너 등록
+        connectBtn.addEventListener('click', connectWallet);
+        withdrawBtn.addEventListener('click', withdrawTokens);
+        initChart();
+    </script>
+</body>
+</html>
