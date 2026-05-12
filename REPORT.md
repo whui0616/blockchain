@@ -1,187 +1,188 @@
-# 이더리움 역사적 해킹 시뮬레이션 과제 보고서
+# Simulating Historic Ethereum Smart Contract Hacks - Report
 
-## 1. 소스코드
+## 1) Source Code
 
-- DAO 취약 컨트랙트  
-  - `contracts/DAOScenario.sol` - `SimpleDAOVulnerable`
+- DAO vulnerable contract: `contracts/DAOScenario.sol` -> `SimpleDAOVulnerable`
+- DAO attacker contract: `contracts/DAOScenario.sol` -> `DAOAttacker`
+- DAO fixed contracts 3ea:
+  - `SimpleDAOFixedCEI`
+  - `SimpleDAOFixedGuard`
+  - `SimpleDAOPullOverPush`
+- Parity #1 vulnerable contract: `contracts/ParityScenario.sol` -> `WalletLibraryVulnerable` + `WalletProxy`
+- Parity #1 attack script: `scripts/parity-init-hijack.js`
+- Parity #1 fixed contract: `contracts/ParityScenario.sol` -> `WalletLibraryFixed`
+- Parity #2 vulnerable contract: `contracts/ParityScenario.sol` -> `WalletLibraryVulnerable` (`kill()` abuse)
+- Parity #2 attack script: `scripts/parity-selfdestruct.js`
+- Parity #2 fixed contract: `contracts/ParityScenario.sol` -> `WalletLibraryFixed` (access control + no selfdestruct)
 
-- DAO 공격 컨트랙트  
-  - `contracts/DAOScenario.sol` - `DAOAttacker`
+## 2) Execution Scripts
 
-- DAO 수정 컨트랙트 3개  
-  - `contracts/DAOScenario.sol` - `SimpleDAOFixedCEI`  
-  - `contracts/DAOScenario.sol` - `SimpleDAOFixedGuard`  
-  - `contracts/DAOScenario.sol` - `SimpleDAOPullOverPush`
-
-- Parity #1 취약 컨트랙트  
-  - `contracts/ParityScenario.sol` - `WalletLibraryVulnerable`, `WalletProxy`
-
-- Parity #1 공격 스크립트  
+- Deploy script: `scripts/deploy.js`
+- Attack scripts:
+  - `scripts/dao-attack.js`
   - `scripts/parity-init-hijack.js`
-
-- Parity #1 수정 컨트랙트  
-  - `contracts/ParityScenario.sol` - `WalletLibraryFixed`
-
-- Parity #2 취약 컨트랙트  
-  - `contracts/ParityScenario.sol` - `WalletLibraryVulnerable` (`kill()` 공개 호출)
-
-- Parity #2 공격 스크립트  
   - `scripts/parity-selfdestruct.js`
+- Test script: `test/assignment.test.js`
 
-- Parity #2 수정 컨트랙트  
-  - `contracts/ParityScenario.sol` - `WalletLibraryFixed` (접근제어 + selfdestruct 제거)
+Commands:
 
-## 2. 실행 스크립트
+```bash
+npm run compile
+npm run deploy
+npm run dao:attack
+npm run parity:init-hijack
+npm run parity:selfdestruct
+npm test
+```
 
-- deploy script  
-  - `scripts/deploy.js`  
-  - 실행: `npm run deploy`
+## 3) Transaction Logs (Summary)
 
-- attack script  
-  - `scripts/dao-attack.js`  
-  - `scripts/parity-init-hijack.js`  
-  - `scripts/parity-selfdestruct.js`  
-  - 전체 실행: `npm run attack:all`
+### Part 1: DAO Reentrancy
 
-- test script  
-  - `test/assignment.test.js`  
-  - 실행: `npm test`
+- Attack before balance: `10.0 ETH`
+- Attack after balance: `0.0 ETH`
+- Attacker contract balance after attack: `11.0 ETH`
+- Fixed contract checks:
+  - CEI: attack reverted (blocked)
+  - Reentrancy guard: attack reverted (blocked)
+  - Pull-over-push: withdraw flow works without reentrancy path
 
-## 3. 트랜잭션 로그
+### Part 2: Parity Hack #1 (Unauthorized Initialization)
 
-### 3-1. DAO 해킹 (Reentrancy)
-
-- 공격 전 잔액  
-  - Vulnerable DAO balance before: `10.0 ETH`
-
-- 공격 실행 후 잔액  
-  - Vulnerable DAO balance after: `0.0 ETH`  
-  - Attacker contract balance: `11.0 ETH`
-
-- owner 변경 여부  
-  - 해당 시나리오는 owner 기반 공격이 아니라 잔액 드레인 공격이므로 owner 변경 항목 없음
-
-- 함수 호출 성공/실패 로그  
-  - 취약 컨트랙트 공격: 성공  
-  - CEI 수정 버전 공격: 실패(차단)  
-  - Reentrancy Guard 수정 버전 공격: 실패(차단)  
-  - Pull-over-push 수정 버전 출금 플로우: 정상 동작
-
-### 3-2. Parity #1 (Unauthorized Initialization)
-
-- 공격 전 잔액  
-  - wallet2: `3 ETH`  
-  - wallet3: `2 ETH` (공격 스크립트에서 입금 후 공격 수행)
-
-- 공격 실행 후 잔액  
-  - wallet2 delta: `-3.0 ETH`  
+- Owner change status:
+  - vulnerable wallet2, wallet3 owner changed to attacker via `initWallet()`
+- Balance change:
+  - wallet2 delta: `-3.0 ETH`
   - wallet3 delta: `-2.0 ETH`
+- Function call result:
+  - `initWallet()` on vulnerable wallets: success (unauthorized takeover possible)
+  - `execute()` by attacker: success
+  - `initWallet()` re-run on fixed wallet: reverted with `already initialized`
 
-- owner 변경 여부  
-  - 취약 버전: wallet2, wallet3 owner가 공격자로 변경됨 (`initWallet()` 악용)  
-  - 수정 버전: 재초기화 시도 시 owner 변경 실패
+### Part 3: Parity Hack #2 (Library Self-Destruct)
 
-- 함수 호출 성공/실패 로그  
-  - 취약 버전 `initWallet()`(공격자): 성공  
-  - 취약 버전 `execute()`(공격자): 성공  
-  - 수정 버전 `initWallet()` 재호출: 실패(`already initialized`)
+- Before attack:
+  - 3 proxy wallets funded and share one library
+- After `kill()` on shared library:
+  - library bytecode length: `2` (destroyed on Berlin hardfork simulation)
+- Function call result:
+  - proxy `execute()` no longer transfers value
+- Balance change during failed withdrawal attempt:
+  - recipient delta: `0.0 ETH`
+  - wallet delta: `0.0 ETH`
+- Interpretation:
+  - funds are frozen (not stolen) because wallets lose executable logic path
 
-### 3-3. Parity #2 (Library Self-Destruct)
+## 4) Detailed Analysis
 
-- 공격 전 잔액  
-  - walletA, walletB, walletC 각 `2 ETH` 입금
+### 4-1. DAO Hack (Reentrancy)
 
-- 공격 실행 후 잔액  
-  - 라이브러리 파괴 이후 인출 시도 시  
-    - recipient delta: `0.0 ETH`  
-    - walletA delta: `0.0 ETH`
+#### Hacking principle
 
-- owner 변경 여부  
-  - 본 시나리오는 owner 탈취가 아니라 공용 라이브러리 파괴로 인한 기능 마비 공격
+External call is executed before state update in `withdraw()`.  
+Attacker fallback re-enters `withdraw()` repeatedly while old balance is still recorded.
 
-- 함수 호출 성공/실패 로그  
-  - 라이브러리 `kill()` 호출: 성공  
-  - 이후 프록시 지갑 `execute()`로 송금 시도: 실질 송금 실패(잔액 이동 없음)  
-  - 결과: 자금 동결(frozen)
+#### Why vulnerability exists
 
-## 4. 보고서
+- Interaction before effects (wrong order)
+- No reentrancy guard
+- Direct push-payment logic in vulnerable flow
 
-### 4-1. DAO 해킹
+#### Attack process
 
-- 각 해킹 원리 설명  
-  - `withdraw()`에서 상태값 차감 전에 외부 호출(`call`)을 수행하면, 공격자 fallback에서 `withdraw()`를 재진입 호출할 수 있다.
+1. Victims deposit ETH to vulnerable DAO.
+2. Attacker deposits small seed ETH.
+3. Attacker calls `withdraw()`.
+4. Fallback function recursively calls `withdraw()` before balance is reduced.
+5. DAO balance drains.
 
-- 취약점이 생긴 이유  
-  - Checks-Effects-Interactions 순서 미준수  
-  - 재진입 방지 락 미구현  
-  - 즉시 송금(push) 방식 사용
+#### Execution result
 
-- 공격 과정  
-  1) 피해자들이 DAO에 ETH 입금  
-  2) 공격자가 소량 입금 후 `attack()` 호출  
-  3) fallback에서 `withdraw()` 재귀 호출  
-  4) DAO 잔액이 반복적으로 빠져나감
+- DAO balance: `10 -> 0 ETH`
+- Attacker contract: `+11 ETH` total held
 
-- 실행 결과  
-  - DAO 잔액 `10 ETH -> 0 ETH`
+#### Fix method
 
-- 수정 방법  
-  - CEI 적용 (`SimpleDAOFixedCEI`)  
-  - Reentrancy Guard 적용 (`SimpleDAOFixedGuard`)  
-  - Pull-over-push 방식 전환 (`SimpleDAOPullOverPush`)
+- CEI ordering (`SimpleDAOFixedCEI`)
+- `nonReentrant` lock (`SimpleDAOFixedGuard`)
+- Pull-over-push credits (`SimpleDAOPullOverPush`)
 
-- 수정 후 공격이 막히는지 확인  
-  - CEI, Guard 버전 모두 공격 트랜잭션 revert  
-  - Pull-over-push는 재진입 경로 자체가 제거되어 공격 불가
+#### Post-fix verification
+
+- CEI attack reverted
+- Guard attack reverted
+- Pull-over-push path has no recursive drain point
 
 ### 4-2. Parity Hack #1 (Unauthorized Initialization)
 
-- 각 해킹 원리 설명  
-  - 프록시가 라이브러리로 `delegatecall`할 때, 초기화 함수 보호가 없으면 누구나 owner를 덮어쓸 수 있다.
+#### Hacking principle
 
-- 취약점이 생긴 이유  
-  - `initWallet()` 재호출 제한 없음  
-  - owner 설정 권한 검증 부재
+Proxy delegates calls to library.  
+If `initWallet()` has no initialization guard, attacker can call it through proxy and overwrite owner.
 
-- 공격 과정  
-  1) 취약 라이브러리 + 프록시 지갑 배포  
-  2) 공격자가 미초기화 지갑에 `initWallet()` 호출  
-  3) owner 탈취 후 `execute()` 호출로 자금 인출
+#### Why vulnerability exists
 
-- 실행 결과  
-  - wallet2, wallet3 owner가 공격자로 변경  
-  - wallet2 `-3 ETH`, wallet3 `-2 ETH` 유출
+- Missing one-time initialization check
+- Privileged state (`owner`) mutable by public init path
 
-- 수정 방법  
-  - `initialized` 플래그 도입 후 1회 초기화만 허용  
-  - owner 권한 검사 유지
+#### Attack process
 
-- 수정 후 공격이 막히는지 확인  
-  - 수정 버전 재초기화 시도 시 `already initialized`로 revert
+1. Deploy one vulnerable library and multiple proxies.
+2. Legit owner initializes one wallet.
+3. Attacker initializes unprotected wallets.
+4. Attacker becomes owner and calls `execute()` to drain ETH.
+
+#### Execution result
+
+- owner changed to attacker on targeted wallets
+- wallet balances decreased by executed transfer amounts
+
+#### Fix method
+
+- Add `initialized` gate (`require(!initialized)`)
+- Keep strict owner checks on transfer execution
+
+#### Post-fix verification
+
+- second `initWallet()` call reverts with `already initialized`
 
 ### 4-3. Parity Hack #2 (Library Self-Destruct)
 
-- 각 해킹 원리 설명  
-  - 여러 지갑이 공용 라이브러리를 참조할 때, 라이브러리 파괴 시 모든 프록시 지갑의 핵심 로직이 사라진다.
+#### Hacking principle
 
-- 취약점이 생긴 이유  
-  - 파괴 함수(`kill`) 공개 노출  
-  - 접근제어 미흡  
-  - 공용 라이브러리 단일 실패지점(SPOF)
+All proxies depend on a shared library via delegatecall.  
+If library has public `kill()`, attacker can destroy it and make every proxy unusable.
 
-- 공격 과정  
-  1) 취약 라이브러리와 다수 프록시 지갑 배포  
-  2) 지갑 초기화 및 자금 예치  
-  3) 공격자가 라이브러리 `kill()` 호출  
-  4) 이후 지갑 함수 호출 불능 상태 유도
+#### Why vulnerability exists
 
-- 실행 결과  
-  - 인출 시도 후에도 잔액 이동 없음  
-  - 자금이 도난이 아니라 동결(frozen)됨
+- No access control on destructive function
+- Shared single-point-of-failure library design
 
-- 수정 방법  
-  - 파괴 함수 제거  
-  - 관리자/소유자 접근제어 적용
+#### Attack process
 
-- 수정 후 공격이 막히는지 확인  
-  - 수정 버전에는 공개 파괴 경로가 없어 동일 공격 재현 불가
+1. Deploy shared vulnerable library and three proxies.
+2. Initialize and fund each proxy.
+3. Attacker calls library `kill()`.
+4. Proxies still exist, but delegatecall target logic is gone.
+5. Wallet functions cannot move funds anymore.
+
+#### Execution result
+
+- transfer attempts do not move ETH
+- balances unchanged in withdrawal attempt
+- funds become frozen
+
+#### Fix method
+
+- Remove public selfdestruct path
+- Add strict access control for admin functions
+
+#### Post-fix verification
+
+- fixed library has no public `kill()`
+- privileged flows require valid owner context
+
+## 5) Conclusion
+
+This assignment reproduces historical vulnerability patterns in a local Hardhat environment only.  
+All fixes were validated by attack scripts and test cases to confirm exploit paths are blocked.
