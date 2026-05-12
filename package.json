@@ -1,27 +1,25 @@
 {
-  "name": "blockchain",
+  "name": "ethereum-rpc-practice",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.js",
-    "dao:attack": "hardhat run scripts/dao-attack.js",
-    "parity:init-hijack": "hardhat run scripts/parity-init-hijack.js",
-    "parity:selfdestruct": "hardhat run scripts/parity-selfdestruct.js",
-    "attack:all": "npm run dao:attack && npm run parity:init-hijack && npm run parity:selfdestruct",
-    "test": "hardhat test"
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/whui0616/ethereum-rpc-practice.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/whui0616/ethereum-rpc-practice/issues"
+  },
+  "homepage": "https://github.com/whui0616/ethereum-rpc-practice#readme",
   "dependencies": {
     "dotenv": "^17.3.1",
     "ethers": "^6.16.0"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
-    "hardhat": "^2.28.6"
   }
 }
