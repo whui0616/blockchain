@@ -1,0 +1,41 @@
+# Parity Hack #2 / Library Self-Destruct
+Network: Hardhat in-memory simulated network only. No live RPC or wallet used.
+Simulation uses pre-Cancun Merge/Paris settings so SELFDESTRUCT removes library code for this historical replay.
+SharedWalletLibraryVulnerable: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Deploying three initialized SharedWallet proxies that point to the same library.
+Wallet 1 proxy: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+Wallet 1 owner initialized: true
+Wallet 1 balance before freeze: 5.0 ETH
+[assertion ok] Wallet 1 legitimate owner initialized
+[assertion ok] Wallet 1 starts funded: 5.0 ETH
+Wallet 2 proxy: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+Wallet 2 owner initialized: true
+Wallet 2 balance before freeze: 5.0 ETH
+[assertion ok] Wallet 2 legitimate owner initialized
+[assertion ok] Wallet 2 starts funded: 5.0 ETH
+Wallet 3 proxy: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
+Wallet 3 owner initialized: true
+Wallet 3 balance before freeze: 5.0 ETH
+[assertion ok] Wallet 3 legitimate owner initialized
+[assertion ok] Wallet 3 starts funded: 5.0 ETH
+Library code bytes before kill: 2063
+Attacker initialized the library's own storage as owner: true
+[assertion ok] attacker owns the library's own storage after direct initWallet
+Library code bytes after kill: 0
+[assertion ok] library code removed under historical selfdestruct replay: 0
+[expected revert] Wallet 1 owner cannot execute because shared library code is gone: execution reverted: "library code missing: wallet funds frozen"
+Wallet 1 balance after failed execute: 5.0 ETH
+[assertion ok] Wallet 1 funds remain frozen, not stolen: 5.0 ETH
+[expected revert] Wallet 2 owner cannot execute because shared library code is gone: execution reverted: "library code missing: wallet funds frozen"
+Wallet 2 balance after failed execute: 5.0 ETH
+[assertion ok] Wallet 2 funds remain frozen, not stolen: 5.0 ETH
+[expected revert] Wallet 3 owner cannot execute because shared library code is gone: execution reverted: "library code missing: wallet funds frozen"
+Wallet 3 balance after failed execute: 5.0 ETH
+[assertion ok] Wallet 3 funds remain frozen, not stolen: 5.0 ETH
+Result: funds are frozen, not stolen. All three wallets still hold ETH, but delegatecall functionality is permanently unavailable because the shared target code is gone.
+
+## Fixed shared library check
+[expected revert] attacker cannot initialize fixed library directly: execution reverted: "already initialized"
+Fixed wallet balance after legitimate owner execute(): 4.0 ETH
+[assertion ok] fixed shared-library wallet remains usable by legitimate owner: 4.0 ETH
+Fixed result: library cannot be taken over directly, exposes no kill function, and the wallet remains usable.

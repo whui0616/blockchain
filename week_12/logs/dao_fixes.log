@@ -1,0 +1,40 @@
+# DAO Reentrancy Fixes - CEI / Guard / Pull-over-push
+Network: Hardhat in-memory simulated network only. No live RPC or wallet used.
+
+## Fix 1: Checks-Effects-Interactions
+SimpleDAO_CEI: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Victim deposits 10 ETH. DAO balance before attack attempt: 10.0 ETH
+[expected revert] SimpleDAO_CEI blocks reentrant DAOAttacker.attack: execution reverted: "send failed"
+DAO balance after attack attempt: 10.0 ETH
+Attacker contract balance after attack attempt: 0.0 ETH
+Recursive calls observed by attacker contract: 0
+[assertion ok] SimpleDAO_CEI final DAO balance matches protected-flow expectation: 10.0 ETH
+[assertion ok] SimpleDAO_CEI attacker received no pushed Ether: 0.0 ETH
+
+## Fix 2: Reentrancy guard
+SimpleDAO_Guard: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Victim deposits 10 ETH. DAO balance before attack attempt: 10.0 ETH
+[expected revert] SimpleDAO_Guard blocks reentrant DAOAttacker.attack: execution reverted: "send failed"
+DAO balance after attack attempt: 10.0 ETH
+Attacker contract balance after attack attempt: 0.0 ETH
+Recursive calls observed by attacker contract: 0
+[assertion ok] SimpleDAO_Guard final DAO balance matches protected-flow expectation: 10.0 ETH
+[assertion ok] SimpleDAO_Guard attacker received no pushed Ether: 0.0 ETH
+
+## Fix 3: Pull-over-push payment queue
+SimpleDAO_PullPayment: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Victim deposits 10 ETH. DAO balance before attack attempt: 10.0 ETH
+Attack transaction completed, but no Ether was pushed to the attacker during withdraw().
+DAO balance after attack attempt: 11.0 ETH
+Attacker contract balance after attack attempt: 0.0 ETH
+Recursive calls observed by attacker contract: 0
+Pending pull payment for attacker contract after withdraw(): 1.0 ETH
+[assertion ok] pull-payment records attacker seed as pending instead of pushing Ether: 1.0 ETH
+Pending pull payment for legitimate victim after withdraw(2 ETH): 2.0 ETH
+[assertion ok] legitimate user can create a pull-payment claim: 2.0 ETH
+Pending pull payment for legitimate victim after claimPayment(): 0.0 ETH
+[assertion ok] legitimate claim clears pending payment: 0.0 ETH
+[assertion ok] SimpleDAO_PullPayment final DAO balance matches protected-flow expectation: 9.0 ETH
+[assertion ok] SimpleDAO_PullPayment attacker received no pushed Ether: 0.0 ETH
+
+Result: fixed variants prevent the vulnerable drain path. CEI and guard revert the reentrant attempt; pull-over-push avoids the callback entirely.

@@ -1,0 +1,14 @@
+# DAO Hack / Reentrancy - vulnerable SimpleDAO
+Network: Hardhat in-memory simulated network only. No live RPC or wallet used.
+SimpleDAO: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+DAOAttacker: 0x663F3ad617193148711d28f5334eE4Ed07016602
+Victim deposits 10 ETH. Initial DAO balance before attacker seed: 10.0 ETH
+Attacker seeds 1 ETH, then recursively withdraws 1 ETH chunks until the DAO is empty.
+DAO balance after attack: 0.0 ETH
+Attacker contract balance after attack: 11.0 ETH
+Recursive calls observed by attacker contract: 10
+[assertion ok] DAO final balance is drained to 0 ETH: 0.0 ETH
+[assertion ok] attacker contract captured the 10 ETH victim pool plus its 1 ETH seed: 11.0 ETH
+[assertion ok] recursive withdraw count: 10
+Underflowed recorded attacker DAO balance after attack (legacy Solidity teaching artifact): 115792089237316195423570985008687907853269984665640564039447.584007913129639936 ETH
+Result: vulnerable contract drained because withdraw() sends Ether before reducing the recorded balance.

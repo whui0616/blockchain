@@ -1,0 +1,20 @@
+{
+  "name": "week-12-dao-parity-local-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-only DAO reentrancy and Parity wallet security simulations for Week 12.",
+  "scripts": {
+    "compile": "hardhat compile",
+    "simulate:dao": "hardhat run scripts/01_dao_attack.js --network hardhatMainnet",
+    "simulate:dao-fixes": "hardhat run scripts/02_dao_fixes.js --network hardhatMainnet",
+    "simulate:parity1": "hardhat run scripts/03_parity1_attack.js --network hardhatMainnet",
+    "simulate:parity2": "hardhat run scripts/04_parity2_freeze.js --network hardhatMainnet",
+    "simulate:all": "npm run simulate:dao && npm run simulate:dao-fixes && npm run simulate:parity1 && npm run simulate:parity2",
+    "test": "npm run compile && npm run simulate:all"
+  },
+  "devDependencies": {
+    "ethers": "^6.15.0",
+    "hardhat": "3.4.5"
+  }
+}

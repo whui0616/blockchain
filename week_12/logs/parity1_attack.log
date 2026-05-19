@@ -1,0 +1,40 @@
+# Parity Hack #1 / Unauthorized Initialization
+Network: Hardhat in-memory simulated network only. No live RPC or wallet used.
+WalletLibraryVulnerable: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Deploying three WalletVulnerable proxies that delegatecall to the same library: Wallet 1 is the legitimate-control wallet; Wallets 2 and 3 are exploited.
+
+## Wallet 1: legitimate initialization control
+Wallet 1 proxy: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+Wallet 1 balance before init: 5.0 ETH
+Owner is owner after legitimate initWallet: true
+[assertion ok] Wallet 1 legitimate owner is initialized
+Wallet 1 balance after legitimate owner execute(1 ETH): 4.0 ETH
+[assertion ok] Wallet 1 remains under legitimate owner control after one normal withdrawal: 4.0 ETH
+
+## Wallet 2: attacker initialization and drain
+Wallet 2 proxy: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+Wallet 2 balance before exploit: 5.0 ETH
+Attacker is owner before initWallet: false
+Attacker is owner after unauthorized initWallet: true
+[assertion ok] Wallet 2 attacker became owner through unauthorized initWallet
+Wallet 2 balance after attacker execute(): 0.0 ETH
+[assertion ok] Wallet 2 drained by attacker: 0.0 ETH
+
+## Wallet 3: attacker initialization and drain
+Wallet 3 proxy: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
+Wallet 3 balance before exploit: 5.0 ETH
+Attacker is owner before initWallet: false
+Attacker is owner after unauthorized initWallet: true
+[assertion ok] Wallet 3 attacker became owner through unauthorized initWallet
+Wallet 3 balance after attacker execute(): 0.0 ETH
+[assertion ok] Wallet 3 drained by attacker: 0.0 ETH
+
+Result: uninitialized proxy storage let the attacker become owner of Wallet 2 and Wallet 3, then drain both wallets.
+
+## Fixed wallet check
+WalletFixed: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
+Fixed wallet balance before attack attempt: 5.0 ETH
+[expected revert] attacker cannot re-run initWallet: execution reverted: "already initialized"
+[expected revert] attacker cannot execute from fixed wallet: execution reverted: "owner only"
+Fixed wallet balance after attack attempt: 5.0 ETH
+[assertion ok] fixed wallet balance remains protected after attacker attempts: 5.0 ETH
