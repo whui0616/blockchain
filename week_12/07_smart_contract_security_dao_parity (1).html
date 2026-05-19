@@ -1,0 +1,2043 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The DAO & Parity Wallet 개념 재연 | 스마트컨트랙트 보안</title>
+  <style>
+    :root {
+      --primary: #38bdf8;
+      --primary-dark: #0284c7;
+      --secondary: #34d399;
+      --accent: #fbbf24;
+      --success: #22c55e;
+      --danger: #fb7185;
+      --bg: #07111f;
+      --bg-card: #0f1f33;
+      --bg-card-hover: #152b45;
+      --text: #e5f0ff;
+      --text-muted: #96abc7;
+      --border: #24405f;
+      --ink: #06101d;
+      --line: rgba(56, 189, 248, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+      min-height: 100%;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans KR", AppleSDGothicNeo, sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.18), transparent 30rem),
+        radial-gradient(circle at 85% 5%, rgba(52, 211, 153, 0.12), transparent 24rem),
+        linear-gradient(180deg, #07111f 0%, #091524 42%, #07111f 100%);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+      min-height: 100%;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(56,189,248,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(180deg, black, transparent 85%);
+      z-index: -1;
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 50;
+      background: rgba(7, 17, 31, 0.86);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-weight: 850;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(56,189,248,0.45);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(52,211,153,0.18));
+      box-shadow: 0 0 26px rgba(56, 189, 248, 0.22);
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.35rem;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      padding: 0.42rem 0.62rem;
+      border-radius: 6px;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: rgba(56, 189, 248, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      min-height: 86vh;
+      padding: 7.5rem 1rem 3rem;
+      display: grid;
+      align-items: center;
+      position: relative;
+    }
+
+    .hero-inner {
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .eyebrow {
+      color: var(--secondary);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.8rem;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 820px;
+      font-size: clamp(2.35rem, 5vw, 4.7rem);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .hero-title-line { display: inline; }
+    .hero-title-line + .hero-title-line::before { content: " "; }
+
+    .hero p {
+      max-width: 760px;
+      color: var(--text-muted);
+      font-size: 1.08rem;
+      margin: 1.2rem 0 0;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin-top: 1.45rem;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0.72rem 0.95rem;
+      background: var(--primary);
+      color: #03101d;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px rgba(56,189,248,0.18);
+    }
+
+    .btn.secondary {
+      background: rgba(15, 31, 51, 0.82);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn.danger { background: var(--danger); color: #22020a; }
+    .btn.success { background: var(--success); color: #03160a; }
+    .btn.small { padding: 0.48rem 0.7rem; font-size: 0.85rem; }
+
+    .chain-orbit {
+      min-height: 430px;
+      position: relative;
+      border: 1px solid rgba(56,189,248,0.22);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(15,31,51,0.96), rgba(7,17,31,0.82)),
+        radial-gradient(circle, rgba(56,189,248,0.16), transparent 60%);
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+    }
+
+    .orbit-line {
+      position: absolute;
+      inset: 10%;
+      border: 1px dashed rgba(56,189,248,0.32);
+      border-radius: 50%;
+      animation: spin 34s linear infinite;
+    }
+
+    .orbit-line.second {
+      inset: 20%;
+      border-color: rgba(52,211,153,0.22);
+      animation-duration: 22s;
+      animation-direction: reverse;
+    }
+
+    .block-node {
+      position: absolute;
+      width: 88px;
+      min-height: 74px;
+      border: 1px solid rgba(148,163,184,0.32);
+      border-radius: 12px;
+      padding: 0.55rem;
+      background: rgba(7, 17, 31, 0.9);
+      box-shadow: 0 0 30px rgba(56,189,248,0.14);
+      animation: floatBlock 5s ease-in-out infinite;
+    }
+
+    .block-node strong { display: block; font-size: 0.82rem; color: var(--text); }
+    .block-node span { display: block; color: var(--text-muted); font-size: 0.68rem; }
+    .block-node:nth-child(3) { left: 8%; top: 18%; }
+    .block-node:nth-child(4) { right: 10%; top: 20%; animation-delay: 0.8s; }
+    .block-node:nth-child(5) { left: 18%; bottom: 13%; animation-delay: 1.6s; }
+    .block-node:nth-child(6) { right: 14%; bottom: 14%; animation-delay: 2.4s; }
+
+    .hero-core {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 150px;
+      height: 150px;
+      transform: translate(-50%, -50%);
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56,189,248,0.36), rgba(52,211,153,0.13) 55%, transparent 72%);
+      animation: pulseCore 2.8s ease-in-out infinite;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 0 auto;
+    }
+
+    section {
+      padding: 4rem 0;
+      scroll-margin-top: 78px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: clamp(1.65rem, 3vw, 2.35rem);
+      line-height: 1.2;
+    }
+
+    .section-number {
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: #04101c;
+      background: var(--accent);
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      max-width: 900px;
+      margin: 0 0 1.4rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .card {
+      background: linear-gradient(180deg, rgba(15,31,51,0.96), rgba(11,24,40,0.96));
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      opacity: 0.78;
+    }
+
+    .card h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1.04rem;
+    }
+
+    .card p { margin: 0.35rem 0; color: var(--text-muted); }
+    .card ul { margin: 0.6rem 0 0; padding-left: 1.2rem; color: var(--text-muted); }
+
+    .callout {
+      border: 1px solid rgba(52,211,153,0.34);
+      background: rgba(52,211,153,0.08);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .callout.warning {
+      border-color: rgba(251,113,133,0.36);
+      background: rgba(251,113,133,0.09);
+    }
+
+    .concept-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin: 1rem 0;
+    }
+
+    
+
+    .sim-guide {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin: 1rem 0;
+    }
+
+    .guide-card {
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 8px;
+      background: rgba(7, 17, 31, 0.55);
+      padding: 0.9rem;
+    }
+
+    .guide-card strong {
+      display: block;
+      color: var(--accent);
+      font-size: 0.88rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .guide-card span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.87rem;
+      line-height: 1.55;
+    }
+
+    .concept-chip,
+    .state-cell,
+    .audit-card {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      background: rgba(15, 31, 51, 0.78);
+      padding: 0.85rem;
+    }
+
+    .concept-chip strong,
+    .state-cell strong,
+    .audit-card strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .concept-chip span,
+    .state-cell span {
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .state-matrix {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin: 1rem 0;
+    }
+
+    .state-cell.ok { border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.09); }
+    .state-cell.warn { border-color: rgba(251, 191, 36, 0.42); background: rgba(251, 191, 36, 0.10); }
+    .state-cell.danger { border-color: rgba(251, 113, 133, 0.42); background: rgba(251, 113, 133, 0.10); }
+
+    .audit-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+      gap: 1rem;
+      align-items: stretch;
+      margin: 1rem 0;
+    }
+
+    .audit-code {
+      margin: 0.7rem 0 0;
+      padding: 0.85rem;
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.78);
+      color: #d8f3ff;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    .audit-meter {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      align-items: center;
+      margin: 0 0 0.75rem;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .audit-meter span { flex: 1 1 auto; min-width: 0; }
+    .audit-meter strong { flex: 0 0 auto; white-space: nowrap; }
+    .audit-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .audit-options button.correct { border-color: rgba(34, 197, 94, 0.65); background: rgba(34, 197, 94, 0.14); }
+    .audit-options button.wrong { border-color: rgba(251, 113, 133, 0.65); background: rgba(251, 113, 133, 0.14); }
+
+    .code-box {
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      color: #d8f3ff;
+      font-size: 0.88rem;
+      white-space: pre;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+    }
+
+    .pill {
+      border: 1px solid rgba(148,163,184,0.28);
+      background: rgba(15,31,51,0.78);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 0.28rem 0.62rem;
+      font-size: 0.82rem;
+    }
+
+    .sim-container {
+      margin-top: 1.2rem;
+      background:
+        linear-gradient(180deg, rgba(15,31,51,0.98), rgba(7,17,31,0.96));
+      border: 1px solid rgba(56,189,248,0.28);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 18px 55px rgba(0,0,0,0.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sim-container::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent, rgba(56,189,248,0.05), transparent);
+      transform: translateX(-100%);
+      animation: scan 7s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .sim-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .sim-header h3 { margin: 0; }
+    .sim-header p { margin: 0.25rem 0 0; color: var(--text-muted); }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      margin: 0.8rem 0;
+    }
+
+    label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.42rem;
+    }
+
+    .hash-input, select {
+      background: rgba(2, 6, 23, 0.72);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.56rem 0.7rem;
+      font: inherit;
+      min-width: 130px;
+    }
+
+    input[type="range"] { accent-color: var(--primary); }
+
+    .ledger {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .stat {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 8px;
+      padding: 0.75rem;
+      background: rgba(2, 6, 23, 0.42);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.35rem;
+      margin-top: 0.18rem;
+    }
+
+    .tx-log {
+      min-height: 168px;
+      max-height: 260px;
+      overflow: auto;
+      background: rgba(2, 6, 23, 0.72);
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.82rem;
+    }
+
+    .tx-entry {
+      padding: 0.25rem 0;
+      border-bottom: 1px solid rgba(148,163,184,0.08);
+      color: var(--text-muted);
+    }
+
+    .tx-entry.good { color: #9ff4bf; }
+    .tx-entry.bad { color: #ffb1bf; }
+    .tx-entry.info { color: #b8e8ff; }
+    .tx-time { opacity: 0.72; margin-right: 0.35rem; }
+
+    .flow-board, .wallet-board, .freeze-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin: 1rem 0;
+    }
+
+    .flow-step, .wallet-box, .freeze-node {
+      border: 1px solid rgba(148,163,184,0.22);
+      background: rgba(2, 6, 23, 0.48);
+      border-radius: 8px;
+      padding: 0.85rem;
+      min-height: 112px;
+      transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+      position: relative;
+    }
+
+    .flow-step.active, .wallet-box.active, .freeze-node.active {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+      background: rgba(56,189,248,0.12);
+      box-shadow: 0 0 32px rgba(56,189,248,0.12);
+    }
+
+    .flow-step.bad, .wallet-box.bad, .freeze-node.bad {
+      border-color: var(--danger);
+      background: rgba(251,113,133,0.1);
+    }
+
+    .flow-step.good, .wallet-box.good, .freeze-node.good {
+      border-color: var(--success);
+      background: rgba(34,197,94,0.09);
+    }
+
+    .chain-track {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(110px, 1fr));
+      gap: 0.6rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      padding-bottom: 0.4rem;
+    }
+
+    .mini-block {
+      border: 1px solid rgba(56,189,248,0.28);
+      border-radius: 8px;
+      padding: 0.7rem;
+      min-height: 92px;
+      background: rgba(2,6,23,0.58);
+      position: relative;
+      animation: floatBlock 5.8s ease-in-out infinite;
+    }
+
+    .mini-block::after {
+      content: "";
+      position: absolute;
+      width: 42px;
+      height: 2px;
+      right: -43px;
+      top: 50%;
+      background: linear-gradient(90deg, var(--primary), transparent);
+    }
+
+    .mini-block:last-child::after { display: none; }
+    .mini-block strong { display: block; color: var(--text); }
+    .mini-block span { display: block; color: var(--text-muted); font-size: 0.75rem; }
+
+    .comparison {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .comparison th, .comparison td {
+      border-bottom: 1px solid rgba(148,163,184,0.14);
+      padding: 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .comparison th { background: rgba(56,189,248,0.12); color: var(--text); }
+    .comparison td { color: var(--text-muted); }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.72rem;
+      border: 1px solid rgba(148,163,184,0.16);
+      border-radius: 8px;
+      background: rgba(15,31,51,0.62);
+      margin-bottom: 0.55rem;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .check-item input {
+      width: 18px;
+      height: 18px;
+      margin-top: 0.22rem;
+      accent-color: var(--secondary);
+      flex: 0 0 auto;
+    }
+
+    .check-item.done {
+      border-color: rgba(34,197,94,0.45);
+      background: rgba(34,197,94,0.08);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+      border: 1px solid rgba(148,163,184,0.25);
+      color: var(--text-muted);
+    }
+
+    .badge.good { color: #a7f3d0; border-color: rgba(34,197,94,0.4); }
+    .badge.bad { color: #fecdd3; border-color: rgba(251,113,133,0.4); }
+    .badge.info { color: #bae6fd; border-color: rgba(56,189,248,0.4); }
+
+    .sim-stage3d {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(180px, 0.9fr) minmax(180px, 1fr) minmax(180px, 0.9fr);
+      gap: 1rem;
+      align-items: stretch;
+      min-height: 260px;
+      margin: 1rem 0;
+      padding: 1rem;
+      border: 1px solid rgba(56,189,248,0.18);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(56,189,248,0.08), transparent 38%),
+        radial-gradient(circle at 50% 0%, rgba(52,211,153,0.12), transparent 36%),
+        rgba(2,6,23,0.52);
+      perspective: 1100px;
+      overflow: hidden;
+    }
+
+    .sim-stage3d::before {
+      content: "";
+      position: absolute;
+      inset: auto -10% -42% -10%;
+      height: 62%;
+      background:
+        linear-gradient(rgba(56,189,248,0.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.14) 1px, transparent 1px);
+      background-size: 34px 34px;
+      transform: rotateX(62deg);
+      transform-origin: top;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .stage-panel {
+      position: relative;
+      z-index: 1;
+      min-height: 210px;
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 8px;
+      padding: 0.9rem;
+      background: linear-gradient(180deg, rgba(15,31,51,0.94), rgba(2,6,23,0.82));
+      box-shadow: 0 22px 36px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
+      transform: rotateX(7deg);
+      transform-style: preserve-3d;
+    }
+
+    .stage-panel strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.92rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .stage-panel small {
+      color: var(--text-muted);
+      display: block;
+      line-height: 1.45;
+    }
+
+    .vault-stack {
+      display: grid;
+      place-items: center;
+      width: min(150px, 82%);
+      aspect-ratio: 1;
+      margin: 1rem auto 0;
+      border-radius: 50%;
+      color: #dffcff;
+      font-size: 1.35rem;
+      font-weight: 900;
+      border: 1px solid rgba(56,189,248,0.34);
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.24), transparent 22%),
+        radial-gradient(circle at 50% 60%, rgba(56,189,248,0.34), rgba(15,31,51,0.96) 64%);
+      box-shadow: 0 0 28px rgba(56,189,248,0.16), inset 0 -18px 32px rgba(0,0,0,0.32);
+    }
+
+    .vault-stack.drain { animation: drainPulse 0.48s ease; border-color: rgba(251,113,133,0.68); }
+    .vault-stack.safe { animation: safePulse 0.48s ease; border-color: rgba(34,197,94,0.68); }
+
+    .attacker-hold {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 118px;
+      height: 78px;
+      margin: 1.15rem auto 0;
+      border-radius: 8px;
+      color: #fff1f2;
+      font-weight: 900;
+      border: 1px solid rgba(251,113,133,0.45);
+      background: linear-gradient(180deg, rgba(251,113,133,0.24), rgba(76,5,25,0.72));
+      transform: translateZ(28px);
+    }
+
+    .control-beam {
+      position: relative;
+      align-self: center;
+      min-height: 150px;
+      border: 1px dashed rgba(56,189,248,0.28);
+      border-radius: 8px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,0.16), transparent);
+      transform: rotateX(9deg) translateZ(12px);
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .control-beam.active::before {
+      content: "";
+      position: absolute;
+      width: 34%;
+      height: 160%;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,0.56), transparent);
+      animation: beamTravel 0.58s ease both;
+    }
+
+    .control-beam.bad { border-color: rgba(251,113,133,0.5); color: #fecdd3; }
+    .control-beam.good { border-color: rgba(34,197,94,0.5); color: #bbf7d0; }
+    .control-beam span { position: relative; z-index: 1; font-weight: 800; }
+
+    .call-stack {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      min-height: 134px;
+      transform: translateZ(22px);
+    }
+
+    .call-frame {
+      border-radius: 8px;
+      padding: 0.42rem 0.58rem;
+      border: 1px solid rgba(251,113,133,0.36);
+      background: rgba(251,113,133,0.12);
+      color: #fecdd3;
+      font-size: 0.78rem;
+      font-weight: 800;
+      box-shadow: 0 12px 18px rgba(0,0,0,0.22);
+      animation: stackRise 0.38s ease both;
+    }
+
+    .call-frame.safe {
+      border-color: rgba(34,197,94,0.4);
+      background: rgba(34,197,94,0.11);
+      color: #bbf7d0;
+    }
+
+    .storage-stage {
+      grid-template-columns: minmax(180px, 0.95fr) minmax(210px, 1.1fr) minmax(180px, 0.95fr);
+    }
+
+    .storage-slot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.7rem;
+      margin: 0.72rem 0;
+      padding: 0.72rem;
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 8px;
+      background: rgba(2,6,23,0.42);
+      transform: translateZ(16px);
+    }
+
+    .storage-slot.changed {
+      border-color: rgba(251,113,133,0.58);
+      box-shadow: 0 0 22px rgba(251,113,133,0.16);
+      animation: slotWrite 0.56s ease;
+    }
+
+    .storage-slot.safe {
+      border-color: rgba(34,197,94,0.5);
+      box-shadow: 0 0 22px rgba(34,197,94,0.12);
+    }
+
+    .owner-key {
+      display: grid;
+      place-items: center;
+      width: 90px;
+      height: 90px;
+      margin: 1rem auto 0;
+      border-radius: 50%;
+      border: 1px solid rgba(251,191,36,0.5);
+      background: radial-gradient(circle at 35% 25%, rgba(255,255,255,0.22), transparent 24%), rgba(251,191,36,0.15);
+      color: #fef3c7;
+      font-weight: 900;
+      transform: translateZ(30px);
+      transition: transform 0.35s ease, border-color 0.35s ease;
+    }
+
+    .owner-key.captured {
+      border-color: rgba(251,113,133,0.82);
+      transform: translateZ(48px) translateY(-8px) rotate(-8deg);
+      box-shadow: 0 0 28px rgba(251,113,133,0.2);
+    }
+
+    .owner-key.guarded {
+      border-color: rgba(34,197,94,0.8);
+      color: #bbf7d0;
+    }
+
+    .guard-shield {
+      margin: 1rem auto 0;
+      width: 82px;
+      height: 98px;
+      clip-path: polygon(50% 0, 92% 18%, 82% 78%, 50% 100%, 18% 78%, 8% 18%);
+      background: linear-gradient(180deg, rgba(148,163,184,0.18), rgba(15,31,51,0.8));
+      border: 1px solid rgba(148,163,184,0.18);
+      opacity: 0.45;
+    }
+
+    .guard-shield.on {
+      opacity: 1;
+      background: linear-gradient(180deg, rgba(34,197,94,0.5), rgba(22,101,52,0.72));
+      box-shadow: 0 0 30px rgba(34,197,94,0.18);
+    }
+
+    .dependency-stage {
+      grid-template-columns: minmax(190px, 0.9fr) minmax(240px, 1.2fr) minmax(190px, 0.9fr);
+    }
+
+    .library-core {
+      display: grid;
+      place-items: center;
+      width: 138px;
+      aspect-ratio: 1;
+      margin: 1.2rem auto 0;
+      border-radius: 50%;
+      border: 1px solid rgba(56,189,248,0.48);
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.2), transparent 20%), rgba(56,189,248,0.15);
+      color: #e0f2fe;
+      font-weight: 900;
+      box-shadow: 0 0 34px rgba(56,189,248,0.18);
+      transform: translateZ(36px);
+    }
+
+    .library-core.owner { border-color: rgba(251,191,36,0.72); color: #fef3c7; }
+    .library-core.destroyed {
+      border-color: rgba(251,113,133,0.78);
+      color: #fecdd3;
+      animation: collapseCore 0.68s ease both;
+    }
+
+    .wallet-orbit {
+      display: grid;
+      gap: 0.62rem;
+      margin-top: 0.7rem;
+      transform: translateZ(18px);
+    }
+
+    .orbit-wallet {
+      border: 1px solid rgba(34,197,94,0.34);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      color: #bbf7d0;
+      background: rgba(34,197,94,0.08);
+      font-weight: 800;
+      transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    }
+
+    .orbit-wallet.frozen {
+      border-color: rgba(251,113,133,0.5);
+      color: #fecdd3;
+      background: rgba(251,113,133,0.11);
+      transform: translateX(10px) rotate(-1.5deg);
+    }
+
+    .dependency-line {
+      position: absolute;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,0.56), transparent);
+      transform-origin: left center;
+      opacity: 0.6;
+    }
+
+    .sim-stage3d.broken .dependency-line {
+      background: linear-gradient(90deg, transparent, rgba(251,113,133,0.62), transparent);
+      animation: lineBreak 0.52s ease both;
+    }
+
+    .canvas-wrap {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(2,6,23,0.5);
+      min-height: 260px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 260px;
+      display: block;
+    }
+
+    footer {
+      border-top: 1px solid rgba(148,163,184,0.16);
+      color: var(--text-muted);
+      padding: 2.5rem 1rem;
+      text-align: center;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseCore {
+      0%, 100% { filter: drop-shadow(0 0 12px rgba(56,189,248,0.35)); transform: translate(-50%, -50%) scale(1); }
+      50% { filter: drop-shadow(0 0 34px rgba(52,211,153,0.42)); transform: translate(-50%, -50%) scale(1.06); }
+    }
+
+    @keyframes floatBlock {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes scan {
+      0%, 58% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    @keyframes beamTravel {
+      from { transform: translateX(-210%) skewX(-12deg); opacity: 0; }
+      20% { opacity: 1; }
+      to { transform: translateX(210%) skewX(-12deg); opacity: 0; }
+    }
+
+    @keyframes stackRise {
+      from { opacity: 0; transform: translateY(18px) translateZ(-14px); }
+      to { opacity: 1; transform: translateY(0) translateZ(0); }
+    }
+
+    @keyframes drainPulse {
+      0% { transform: scale(1); }
+      45% { transform: scale(0.94); box-shadow: 0 0 28px rgba(251,113,133,0.24); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes safePulse {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.04); box-shadow: 0 0 28px rgba(34,197,94,0.2); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes slotWrite {
+      0% { transform: translateZ(16px); }
+      45% { transform: translateZ(44px) translateY(-5px); }
+      100% { transform: translateZ(16px); }
+    }
+
+    @keyframes collapseCore {
+      0% { transform: translateZ(36px) scale(1); filter: none; }
+      55% { transform: translateZ(18px) scale(0.92) rotate(5deg); filter: saturate(1.5); }
+      100% { transform: translateZ(0) scale(0.86) rotate(-4deg); filter: grayscale(0.6); }
+    }
+
+    @keyframes lineBreak {
+      0% { opacity: 0.7; transform: scaleX(1); }
+      100% { opacity: 0.2; transform: scaleX(0.42); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media (max-width: 920px) {
+      .hero-inner, .grid.three, .grid.two, .ledger, .flow-board, .wallet-board, .freeze-board, .sim-stage3d, .concept-strip, .sim-guide, .state-matrix, .audit-board, .audit-options {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-top: 9.5rem; }
+      .chain-orbit { min-height: 360px; }
+      .nav-inner { align-items: flex-start; flex-direction: column; }
+      .nav-links { justify-content: flex-start; width: 100%; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.3rem; scrollbar-width: thin; }
+      .nav-links a { flex: 0 0 auto; white-space: nowrap; }
+    }
+
+    @media (max-width: 560px) {
+      .nav-links a { font-size: 0.74rem; padding: 0.3rem 0.45rem; }
+      html, body { max-width: 100vw; overflow-x: hidden; }
+      .nav-inner, .nav-links { min-width: 0; max-width: 100%; }
+      .hero { min-height: auto; padding-top: 9.75rem; overflow: hidden; }
+      .hero-inner { display: block; width: 100%; min-width: 0; max-width: 100%; }
+      .hero-inner > div { width: min(100%, 358px); min-width: 0; max-width: 358px; }
+      .hero-title-line { display: block; }
+      .hero-title-line + .hero-title-line::before { content: ""; }
+      h1 { width: min(100%, 340px); max-width: 340px; font-size: 1.68rem; line-height: 1.18; overflow-wrap: anywhere; }
+      .hero p { width: min(100%, 340px); max-width: 340px; font-size: 0.98rem; overflow-wrap: anywhere; }
+      .hero-actions .btn { flex: 1 1 100%; text-align: center; }
+      .chain-orbit { width: min(100%, 358px); max-width: 358px; min-height: 320px; margin-top: 2rem; border-radius: 12px; }
+      .hero-core { width: 122px; height: 122px; }
+      .block-node { width: 76px; min-height: 66px; }
+      .block-node:nth-child(4) { right: 4%; }
+      .block-node:nth-child(6) { right: 5%; }
+      section { padding: 3rem 0; }
+      .sim-header { display: block; }
+      .control-row .btn, .control-row .hash-input, .control-row select { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark">⛓</span><span>Smart Contract Security</span></div>
+      <div class="nav-links" aria-label="강의 섹션">
+        <a href="#overview">개요</a>
+        <a href="#concepts">기초개념</a>
+        <a href="#dao">The DAO</a>
+        <a href="#sim-reentrancy">재진입</a>
+        <a href="#parity-init">Parity 1차</a>
+        <a href="#sim-init">초기화</a>
+        <a href="#sim-delegatecall">delegatecall</a>
+        <a href="#sim-freeze">동결</a>
+        <a href="#compare">비교</a>
+        <a href="#glossary">&#52280;&#44256;</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="eyebrow">Blockchain Security Lecture</div>
+        <h1><span class="hero-title-line">The DAO & Parity</span><span class="hero-title-line">Wallet 개념 재연</span></h1>
+        <p>
+          두 사건은 블록체인 자체가 깨진 사례가 아니라, 스마트컨트랙트 코드 설계가 잘못되어
+          자산 이동 규칙이 공격자에게 유리하게 작동한 사례다. 이 페이지는 초보자가
+          "왜 위험한지"를 눈으로 따라가도록 만든 단일 파일 강의자료다. 실제 컨트랙트 전체 재현이 아니라 핵심 상태 전이를 단순화한 교육용 모델이며, 최신 EVM 동작과 실무 적용은 하단 고지와 출처를 함께 확인해야 한다.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" href="#sim-reentrancy">재진입 시뮬레이션 시작</a>
+          <a class="btn secondary" href="#compare">보안 체크리스트 보기</a>
+        </div>
+      </div>
+      <div class="chain-orbit" aria-label="블록체인 네트워크 애니메이션">
+        <div class="orbit-line"></div>
+        <div class="orbit-line second"></div>
+        <div class="block-node"><strong>Block 1920000</strong><span>DAO fork point</span></div>
+        <div class="block-node"><strong>Wallet</strong><span>owner storage</span></div>
+        <div class="block-node"><strong>Library</strong><span>delegatecall code</span></div>
+        <div class="block-node"><strong>Attacker</strong><span>fallback loop</span></div>
+        <div class="hero-core">ETH<br>STATE</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="overview">
+      <div class="section-title"><div class="section-number">0</div><h2>오늘의 핵심 질문</h2></div>
+      <p class="section-desc">스마트컨트랙트 보안은 어려운 해킹 기술부터 외우는 과목이 아니다. 먼저 함수 권한, 상태 변경 순서, 외부 호출 위치를 보는 습관이 필요하다.</p>
+      <div class="grid three">
+        <article class="card">
+          <h3>1. 이 함수는 누구에게 열려 있는가?</h3>
+          <p>`public` 함수는 모두가 호출할 수 있다. 테스트용으로 열어 둔 초기화 함수가 배포 후에는 지갑 탈취 경로가 될 수 있다.</p>
+        </article>
+        <article class="card">
+          <h3>2. 장부를 먼저 고쳤는가?</h3>
+          <p>ETH를 먼저 보내고 잔액을 나중에 줄이면, 외부 컨트랙트가 같은 출금 함수를 다시 부를 수 있다.</p>
+        </article>
+        <article class="card">
+          <h3>3. delegatecall은 누구의 storage를 바꾸는가?</h3>
+          <p>다른 컨트랙트의 코드를 빌려오더라도 저장소는 호출자 쪽 storage가 바뀐다. Parity 1차에서는 열린 초기화/권한 경로가 이 구조와 결합해 Wallet owner 상태를 바꿀 수 있었다.</p>
+        </article>
+      </div>
+      <div class="callout">
+        <strong>한 줄 요약:</strong> 핵심을 단순화하면 The DAO는 "외부 호출 전에 상태를 확정하지 않은 문제"이고, Parity Wallet은 "초기화 함수와 라이브러리 권한 관리를 잘못한 문제"이다.
+      </div>
+    </section>
+
+    <section id="concepts">
+      <div class="section-title"><div class="section-number">1</div><h2>먼저 알아야 할 기본 개념</h2></div>
+      <p class="section-desc">시뮬레이션을 이해하려면 상태값, 외부 호출, 초기화 함수, delegatecall의 의미를 먼저 잡아야 한다.</p>
+      <div class="grid two">
+        <article class="card">
+          <h3>상태값은 컨트랙트가 기억하는 장부다</h3>
+          <p>`balances[msg.sender]`는 지금 함수를 부른 사람의 잔액이고, `owner`는 관리자 주소다. 스마트컨트랙트 보안에서는 이 장부가 언제 바뀌는지가 중요하다.</p>
+          <pre class="code-box">mapping(address =&gt; uint256) public balances;
+address public owner;
+bool public initialized;</pre>
+        </article>
+        <article class="card">
+          <h3>외부 호출은 제어권을 잠깐 넘기는 일이다</h3>
+          <p>ETH를 보내는 코드는 단순 송금처럼 보이지만, 상대방이 컨트랙트라면 그 컨트랙트의 `receive()` 함수가 실행될 수 있다.</p>
+          <pre class="code-box">msg.sender.call{value: amount}("");</pre>
+        </article>
+        <article class="card">
+          <h3>초기화 함수는 배포 후 constructor처럼 쓰인다</h3>
+          <p>프록시나 라이브러리 구조에서는 `initWallet()` 같은 함수를 따로 둔다. 반드시 한 번만 실행되어야 하고, 아무나 호출할 수 없어야 한다.</p>
+        </article>
+        <article class="card">
+          <h3>delegatecall은 코드만 빌려 쓰는 호출이다</h3>
+          <p>라이브러리 코드가 실행되지만 storage는 지갑 컨트랙트 쪽이 바뀐다. 열린 initializer나 권한 함수가 있으면 Wallet의 owner 상태가 바뀔 수 있다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="dao">
+      <div class="section-title"><div class="section-number">2</div><h2>사건 1: The DAO 해킹, 2016</h2></div>
+      <p class="section-desc">The DAO는 이더리움 위의 탈중앙화 투자 조직이었다. 실제 사건은 splitDAO 재귀 호출을 통해 대량의 ETH가 분리된 child DAO로 이동한 사례였고, 이후 이더리움 하드포크 논쟁으로 이어졌다. 아래 ATM 모델은 그 재진입 원리를 단순화한 도식이다.</p>
+      <div class="callout" data-review-note="dao-date"><strong>&#45216;&#51676; &#51221;&#47532;:</strong> 2016&#45380; 6&#50900; The DAO &#44277;&#44201; &#48143; &#52712;&#50557;&#51216; &#44277;&#51648;, 2016&#45380; 7&#50900; &#54616;&#46300;&#54252;&#53356; &#45436;&#51032;&#47196; &#51060;&#50612;&#51664; &#49324;&#44148;&#51060;&#45796;.</div>
+      <div class="grid two">
+        <article class="card">
+          <h3>위험한 순서</h3>
+          <pre class="code-box">function withdraw(uint256 amount) public {
+  require(balances[msg.sender] &gt;= amount);
+  msg.sender.call{value: amount}("");
+  balances[msg.sender] -= amount;
+}</pre>
+          <p>핵심을 단순화하면, 외부로 제어권을 넘긴 뒤 장부를 나중에 고치는 순서가 문제다. 외부 호출 사이에 공격자가 다시 들어올 수 있다.</p>
+        </article>
+        <article class="card">
+          <h3>안전한 순서</h3>
+          <pre class="code-box">function withdraw(uint256 amount) public {
+  require(balances[msg.sender] &gt;= amount);
+  balances[msg.sender] -= amount;
+  (bool ok, ) = msg.sender.call{value: amount}("");
+  require(ok);
+}</pre>
+          <p>조건 확인, 상태 변경, 외부 호출 순서다. 이것이 Checks-Effects-Interactions 패턴이며, 실제 구현에서는 call 결과 확인과 ReentrancyGuard 또는 pull-payment 패턴도 함께 검토한다.</p>
+        </article>
+      </div>
+      <div class="chain-track" aria-label="The DAO 공격 흐름">
+        <div class="mini-block"><strong>입금</strong><span>공격자가 1 ETH 예치</span></div>
+        <div class="mini-block"><strong>출금</strong><span>withdraw 호출</span></div>
+        <div class="mini-block"><strong>외부호출</strong><span>ETH 먼저 전송</span></div>
+        <div class="mini-block"><strong>재진입</strong><span>receive에서 재호출</span></div>
+        <div class="mini-block"><strong>반복</strong><span>장부 수정 전 반복</span></div>
+      </div>
+    </section>
+
+    <section id="sim-reentrancy">
+      <div class="section-title"><div class="section-number">3</div><h2>시뮬레이션 A: 재진입 공격 ATM</h2></div>
+      <p class="section-desc">취약 모드에서는 ETH 전송이 먼저 일어나고, 안전 모드에서는 잔액 차감이 먼저 일어난다. 같은 입력으로 결과가 어떻게 달라지는지 비교한다.</p>
+      <div class="sim-container">
+        <div class="sim-header">
+          <div>
+            <h3>VulnerableBank vs SafeBank</h3>
+            <p>공격 깊이를 높이면 `receive()`에서 몇 번 다시 출금하는지 볼 수 있다.</p>
+          </div>
+          <span class="badge info" id="re-mode-label">취약 모드</span>
+        </div>
+        <div class="sim-guide" id="guide-reentrancy" aria-label="simulation usage guide">
+          <div class="guide-card"><strong>사용 방법</strong><span>먼저 취약 모드로 공격 깊이를 정해 실행하고, 같은 깊이로 안전 모드를 다시 실행해 비교한다.</span></div>
+          <div class="guide-card"><strong>관찰 포인트</strong><span>bank는 컨트랙트 금고, attacker는 받은 ETH, ledger는 내부 장부다. 취약 모드는 장부가 늦게 줄고 안전 모드는 먼저 줄어든다.</span></div>
+          <div class="guide-card"><strong>왜 필요한가</strong><span>재진입은 한 줄짜리 버그가 아니라 상태 변경 순서 문제다. CEI가 왜 효과적인지 숫자로 확인하는 실험이다.</span></div>
+        </div>
+        <div class="control-row">
+          <label>모드
+            <select id="re-mode" class="hash-input">
+              <option value="vulnerable">취약: send 먼저</option>
+              <option value="safe">안전: balance 먼저</option>
+            </select>
+          </label>
+          <label>공격 재호출 횟수 <input type="range" id="re-depth" min="1" max="6" value="4"></label>
+          <span class="badge" id="re-depth-label">4회</span>
+          <button type="button" class="btn small danger" id="run-reentrancy">공격 실행</button>
+          <button type="button" class="btn small secondary" id="reset-reentrancy">초기화</button>
+        </div>
+        <div class="ledger">
+          <div class="stat"><span>은행 컨트랙트 ETH</span><strong id="re-bank">8</strong></div>
+          <div class="stat"><span>공격자 지갑 ETH</span><strong id="re-attacker">0</strong></div>
+          <div class="stat"><span>장부상 공격자 잔액</span><strong id="re-ledger">1</strong></div>
+          <div class="stat"><span>재진입 성공</span><strong id="re-count">0</strong></div>
+        </div>
+        
+        <div class="concept-strip" aria-label="Reentrancy concept bridge">
+          <div class="concept-chip"><strong>&#49345;&#53468; &#48320;&#54868;</strong><span id="re-bank-explain">bank, attacker, ledger&#44032; call stack&#50640; &#46384;&#46972; &#54620; &#45800;&#44228;&#50473; &#48148;&#45057;&#45768;&#45796;.</span></div>
+          <div class="concept-chip"><strong>&#50948;&#54744; &#50896;&#51064;</strong><span>&#50808;&#48512; call&#51060; &#51109;&#48512; &#44049;&#49548;&#48372;&#45796; &#47676;&#51200; &#49892;&#54665;&#46104;&#47732; &#46041;&#51068; &#51092;&#50529;&#51012; &#48152;&#48373; &#52636;&#44552;&#54633;&#45768;&#45796;.</span></div>
+          <div class="concept-chip"><strong>&#48169;&#50612; &#50896;&#47532;</strong><span>CEI&#45716; ledger=0&#51012; &#47676;&#51200; &#44592;&#47197;&#54644; &#51116;&#51652;&#51077; &#49884;&#51216;&#51032; &#49345;&#53468;&#47484; &#48148;&#45045;&#45768;&#45796;.</span></div>
+          <div class="concept-chip"><strong>&#44208;&#44284; &#47196;&#44536;</strong><span>&#50500;&#47000; &#47196;&#44536;&#45716; &#46024;&#51060; &#50734;&#44200;&#51652; &#49692;&#49436;&#50752; &#51109;&#48512; &#48152;&#50689; &#49884;&#51216;&#51012; &#44057;&#51060; &#48372;&#50668;&#51469;&#45768;&#45796;.</span></div>
+        </div>
+        <div class="sim-stage3d re-stage" aria-label="재진입 공격의 제어권 이동과 콜스택 시각화">
+          <div class="stage-panel">
+            <strong>Bank Contract Vault</strong>
+            <small>컨트랙트가 보유한 실제 ETH 풀이다. 취약 모드에서는 잔액 장부가 줄기 전에 이 금고에서 ETH가 먼저 빠져나간다.</small>
+            <div class="vault-stack" id="re-vault-stack">8 ETH</div>
+          </div>
+          <div class="control-beam" id="re-beam"><span id="re-beam-label">대기: withdraw 호출 전</span></div>
+          <div class="stage-panel">
+            <strong>Attacker receive()</strong>
+            <small>ETH를 받는 순간 fallback/receive가 다시 withdraw를 부른다. 아래 콜스택이 깊어질수록 같은 로직이 중첩 실행된다.</small>
+            <div class="attacker-hold" id="re-attacker-hold">0 ETH</div>
+            <div class="call-stack" id="re-call-stack" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="flow-board">
+          <div class="flow-step" id="re-step-check"><strong>Checks</strong><p>잔액이 충분한지 확인한다.</p></div>
+          <div class="flow-step" id="re-step-effect"><strong>Effects</strong><p>장부의 잔액을 줄인다.</p></div>
+          <div class="flow-step" id="re-step-interact"><strong>Interactions</strong><p>외부 주소로 ETH를 보낸다.</p></div>
+        </div>
+        <div class="tx-log" id="re-log" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="parity-init">
+      <div class="section-title"><div class="section-number">4</div><h2>사건 2: Parity Wallet 1차 해킹</h2></div>
+      <p class="section-desc">Parity 멀티시그 지갑은 라이브러리 컨트랙트에 기능을 위임했다. 문제는 초기화 함수가 보호되지 않아 공격자가 자신을 owner로 등록할 수 있었다는 점이다.</p>
+      <div class="callout" data-review-note="parity-date"><strong>&#45216;&#51676; &#51221;&#47532;:</strong> 2017&#45380; 7&#50900; 1&#52264; &#49324;&#44148;&#51008; initWallet &#48120;&#48372;&#54840;&#47196; owner&#44032; &#53448;&#52712;&#46108; &#49324;&#44148;&#51060;&#45796;.</div>
+      <div class="grid three">
+        <article class="card">
+          <h3>초기화 함수 미보호</h3>
+          <p>`initWallet()`이 배포 후에도 다시 호출 가능하고 initialized guard나 접근제어가 없으면 공격자가 owner 목록을 바꿀 수 있다. 실제 Parity 사고는 단일 owner 변수만이 아니라 multi-sig owner 배열과 threshold 계열 권한 상태가 바뀐 사례다.</p>
+        </article>
+        <article class="card">
+          <h3>delegatecall 구조</h3>
+          <p>라이브러리 코드는 지갑 storage context에서 실행된다. 따라서 라이브러리의 열린 initializer나 권한 함수가 지갑 권한 실수로 이어질 수 있다.</p>
+        </article>
+        <article class="card">
+          <h3>결과</h3>
+          <p>공격자가 owner가 된 뒤 멀티시그 지갑의 자금을 전송할 수 있었다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="sim-init">
+      <div class="section-title"><div class="section-number">5</div><h2>시뮬레이션 B: initWallet 탈취</h2></div>
+      <p class="section-desc">초기화 잠금이 없을 때와 있을 때를 비교한다. 공격자가 `initWallet([attacker])`를 누르면 권한 관련 storage가 어떻게 바뀌는지 확인한다. 화면의 owner와 initialized 슬롯은 실제 Parity storage layout이 아니라 교육용 축약 도식이다.</p>
+      <div class="sim-container">
+        <div class="sim-header">
+          <div>
+            <h3>초기화 함수 접근제어 실험</h3>
+            <p>지갑 owner, 초기화 여부, 전송 가능 여부가 함께 변한다.</p>
+          </div>
+          <span class="badge bad" id="init-status">unlocked init</span>
+        </div>
+        <div class="sim-guide" id="guide-init" aria-label="simulation usage guide">
+          <div class="guide-card"><strong>사용 방법</strong><span>취약 비교는 지갑 배포 후 공격자 initWallet 호출을 누른다. 방어 비교는 초기화 버튼을 누른 뒤 guard를 먼저 켜고 다시 배포·공격한다.</span></div>
+          <div class="guide-card"><strong>관찰 포인트</strong><span>owner, initialized, guard 상태표를 같이 본다. guard OFF에서는 owner가 0xBAD로 바뀌고, guard ON 선배포에서는 0xTEAM이 유지된다.</span></div>
+          <div class="guide-card"><strong>왜 필요한가</strong><span>초기화 함수는 public/external일 수 있지만, 배포 과정에서 정확히 한 번만 실행되고 재초기화가 막혀야 한다.</span></div>
+        </div>
+        <div class="control-row">
+          <button type="button" class="btn small secondary" id="deploy-wallet">지갑 배포</button>
+          <button type="button" class="btn small danger" id="attacker-init">공격자 initWallet 호출</button>
+          <button type="button" class="btn small" id="toggle-guard">initializer 방어 켜기</button>
+          <button type="button" class="btn small secondary" id="reset-init">초기화</button>
+        </div>
+        <div class="wallet-board">
+          <div class="wallet-box active" id="box-wallet"><strong>Wallet Storage</strong><p>owner: <span id="wallet-owner">미설정</span></p><p>initialized: <span id="wallet-initialized">false</span></p></div>
+          <div class="wallet-box" id="box-library"><strong>WalletLibrary Code</strong><p>initWallet(_owners)</p><p>execute(to, value)</p></div>
+          <div class="wallet-box" id="box-attacker"><strong>Attacker</strong><p>공격자 주소: 0xBAD</p><p>owner가 되면 execute 가능</p></div>
+        </div>
+        
+        <div class="state-matrix" aria-label="initWallet state table">
+          <div class="state-cell warn" id="init-owner-cell"><strong>owner</strong><span id="init-owner-state">not deployed</span></div>
+          <div class="state-cell warn" id="init-initialized-cell"><strong>initialized</strong><span id="init-initialized-state">false</span></div>
+          <div class="state-cell ok" id="init-guard-cell"><strong>guard</strong><span id="init-guard-state">ON blocks second initialization</span></div>
+        </div>
+        <div class="sim-stage3d storage-stage" aria-label="initWallet 호출로 owner storage가 바뀌는 입체 시각화">
+          <div class="stage-panel">
+            <strong>Unprotected Entry</strong>
+            <small>초기화 함수가 public으로 열려 있으면 공격자가 배포 이후에도 진입점으로 들어올 수 있다.</small>
+            <div class="owner-key" id="init-owner-key">0xBAD key</div>
+          </div>
+          <div class="stage-panel">
+            <strong>Wallet Storage Slots</strong>
+            <div class="storage-slot" id="init-slot-owner"><span>slot 0: owner</span><b id="init-slot-owner-value">미설정</b></div>
+            <div class="storage-slot" id="init-slot-init"><span>slot 1: initialized</span><b id="init-slot-init-value">false</b></div>
+            <small>delegatecall 구조에서는 라이브러리 코드가 실행되어도 쓰기는 지갑 storage slot에 발생한다. slot 번호와 변수명은 개념 설명용 도식이다.</small>
+          </div>
+          <div class="stage-panel">
+            <strong>Initializer Guard</strong>
+            <small>constructor나 initializer guard가 있으면 같은 초기화 경로가 두 번 열리지 않는다.</small>
+            <div class="guard-shield" id="init-guard-shield" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="tx-log" id="init-log" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="sim-delegatecall">
+      <div class="section-title"><div class="section-number">6</div><h2>시뮬레이션 C: delegatecall storage 지도</h2></div>
+      <p class="section-desc">delegatecall은 "라이브러리 코드 실행"이지만 storage는 "지갑 storage"를 사용한다. 아래 그림에서 owner 슬롯이 어디서 바뀌는지 확인한다.</p>
+      <div class="sim-container">
+        <div class="sim-header">
+          <div>
+            <h3>코드는 Library, 장부는 Wallet</h3>
+            <p>버튼을 누르면 실행 화살표가 움직이고 바뀌는 storage 슬롯이 강조된다.</p>
+          </div>
+          <span class="badge info" id="delegate-status">대기</span>
+        </div>
+        <div class="sim-guide" id="guide-delegatecall" aria-label="simulation usage guide">
+          <div class="guide-card"><strong>사용 방법</strong><span>실행 전 canvas에서 Library와 Wallet을 구분한 뒤 delegatecall 실행을 누르고, 실행 후 owner 슬롯 위치를 다시 본다.</span></div>
+          <div class="guide-card"><strong>관찰 포인트</strong><span>코드는 Library에서 선택되지만 storage 쓰기는 Wallet slot에 발생한다. 로그의 "Library storage가 아님" 문장을 확인한다.</span></div>
+          <div class="guide-card"><strong>왜 필요한가</strong><span>Parity 1차의 핵심은 열린 initializer/권한 경로가 delegatecall을 통해 Wallet 상태를 바꿀 수 있었다는 점이다.</span></div>
+        </div>
+        <div class="control-row">
+          <button type="button" class="btn small" id="run-delegate">delegatecall 실행</button>
+          <button type="button" class="btn small secondary" id="reset-delegate">초기화</button>
+        </div>
+        
+        <div class="concept-strip" aria-label="delegatecall concept bridge">
+          <div class="concept-chip"><strong>&#49892;&#54665; &#53076;&#46300;</strong><span id="delegate-code-owner">Library code is selected by delegatecall.</span></div>
+          <div class="concept-chip"><strong>&#51200;&#51109;&#44277;&#44036;</strong><span id="delegate-storage-owner">Wallet storage is still the write target.</span></div>
+          <div class="concept-chip"><strong>위험 원인</strong><span>Wallet이 Library의 열린 initializer나 권한 함수를 delegatecall로 실행하면, Library 코드가 Wallet owner 상태를 바꿀 수 있다.</span></div>
+          <div class="concept-chip"><strong>방어 원리</strong><span>initializer를 배포 과정에서 한 번만 실행하고, 재초기화와 직접 호출 경로를 막는다. storage layout 검사는 일반 delegatecall 위험 검토에 포함한다.</span></div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="delegate-canvas" width="900" height="260" aria-label="delegatecall storage 시각화"></canvas>
+        </div>
+        <div class="tx-log" id="delegate-log" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="sim-freeze">
+      <div class="section-title"><div class="section-number">7</div><h2>시뮬레이션 D: Parity 2차 자금 동결</h2></div>
+      <p class="section-desc">여러 지갑이 하나의 라이브러리에 의존하면, 라이브러리 하나가 사라졌을 때 여러 지갑이 동시에 기능을 잃는다.</p>
+      <div class="callout" data-review-note="freeze-date"><strong>&#45216;&#51676; &#51221;&#47532;:</strong> 2017&#45380; 11&#50900; 2&#52264; &#49324;&#44148;&#51008; &#44277;&#50976; &#46972;&#51060;&#48652;&#47084;&#47532; &#53076;&#46300;&#44032; &#49325;&#51228;&#46104;&#50612; &#50668;&#47084; &#51648;&#44049;&#51032; &#51088;&#44552;&#51060; &#46041;&#44208;&#46108; &#49324;&#44148;&#51060;&#45796;.</div>
+      <div class="callout warning" data-review-note="selfdestruct-modern"><strong>현재 EVM과의 차이:</strong> 이 시뮬레이션은 2017년 당시 Parity 사고의 SELFDESTRUCT 동작을 설명한다. post-Cancun EVM에서는 EIP-6780에 따라 같은 트랜잭션에서 생성된 컨트랙트 예외를 제외하면 SELFDESTRUCT가 기존 컨트랙트의 코드, storage, 계정을 삭제하지 않는다. 단, 계정 잔액을 beneficiary로 전송하는 동작은 남는다. 여기서는 역사적 사건의 원인 이해에 초점을 둔다.</div>
+      <div class="sim-container">
+        <div class="sim-header">
+          <div>
+            <h3>공유 라이브러리 selfdestruct 효과</h3>
+            <p>라이브러리 초기화 → owner 획득 → kill 실행 → 지갑 기능 마비 순서를 재연한다.</p>
+          </div>
+          <span class="badge info" id="freeze-status">library alive</span>
+        </div>
+        <div class="sim-guide" id="guide-freeze" aria-label="simulation usage guide">
+          <div class="guide-card"><strong>사용 방법</strong><span>library init, kill, 지갑 출금 시도를 순서대로 누른다. 중간에 상태표가 어떻게 바뀌는지 멈춰서 읽는다.</span></div>
+          <div class="guide-card"><strong>관찰 포인트</strong><span>ETH balance는 남아 있고, library code path와 withdraw execution만 끊긴다. 돈이 사라진 사건이 아니라 실행 경로가 막힌 사건이다.</span></div>
+          <div class="guide-card"><strong>왜 필요한가</strong><span>공유 라이브러리 의존성은 하나의 코드 장애가 여러 지갑의 장애로 번지는 구조적 위험을 만든다.</span></div>
+        </div>
+        <div class="control-row">
+          <button type="button" class="btn small secondary" id="freeze-init">1. library init()</button>
+          <button type="button" class="btn small danger" id="freeze-kill">2. kill()</button>
+          <button type="button" class="btn small" id="freeze-withdraw">3. 지갑 출금 시도</button>
+          <button type="button" class="btn small secondary" id="reset-freeze">초기화</button>
+        </div>
+        <div class="freeze-board">
+          <div class="freeze-node" id="lib-node"><strong>Shared Library</strong><p>code: <span id="lib-code">exists</span></p><p>owner: <span id="lib-owner">none</span></p></div>
+          <div class="freeze-node" id="wallet-a"><strong>Wallet A</strong><p>12 ETH</p><p class="wallet-state">작동 가능</p></div>
+          <div class="freeze-node" id="wallet-b"><strong>Wallet B</strong><p>30 ETH</p><p class="wallet-state">작동 가능</p></div>
+        </div>
+        
+        <div class="state-matrix" aria-label="Parity freeze state table">
+          <div class="state-cell ok" id="freeze-funds-cell"><strong>ETH balance</strong><span id="freeze-funds-state">wallet account balance remains</span></div>
+          <div class="state-cell ok" id="freeze-code-cell"><strong>library code path</strong><span id="freeze-code-state">callable before selfdestruct</span></div>
+          <div class="state-cell warn" id="freeze-execute-cell"><strong>withdraw execution</strong><span id="freeze-execute-state">depends on shared library</span></div>
+        </div>
+        <div class="sim-stage3d dependency-stage" id="freeze-stage" aria-label="공유 라이브러리 파괴가 여러 지갑에 전파되는 입체 시각화">
+          <div class="stage-panel">
+            <strong>Wallet Group A</strong>
+            <small>각 지갑은 자금을 따로 갖고 있지만 실행 로직은 같은 라이브러리 코드에 의존한다.</small>
+            <div class="wallet-orbit">
+              <div class="orbit-wallet" id="orbit-wallet-a">Wallet A: execute ready</div>
+              <div class="orbit-wallet" id="orbit-wallet-c">Wallet C: execute ready</div>
+            </div>
+          </div>
+          <div class="stage-panel">
+            <strong>Shared Library Hub</strong>
+            <small>중앙 코드 허브가 사라지면 지갑 계정 잔액의 ETH는 남아도 실행할 코드 경로가 끊긴다.</small>
+            <div class="library-core" id="freeze-core">CODE</div>
+          </div>
+          <div class="stage-panel">
+            <strong>Wallet Group B</strong>
+            <small>단일 라이브러리 의존성은 장애 범위를 크게 만든다. 이것이 2차 사고의 핵심이다.</small>
+            <div class="wallet-orbit">
+              <div class="orbit-wallet" id="orbit-wallet-b">Wallet B: execute ready</div>
+              <div class="orbit-wallet" id="orbit-wallet-d">Wallet D: execute ready</div>
+            </div>
+          </div>
+        </div>
+        <div class="tx-log" id="freeze-log" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="compare">
+      <div class="section-title"><div class="section-number">8</div><h2>두 사건 비교</h2></div>
+      <p class="section-desc">The DAO는 순서 문제, Parity Wallet은 권한과 구조 문제로 정리할 수 있다.</p>
+      <table class="comparison">
+        <thead><tr><th>구분</th><th>The DAO</th><th>Parity Wallet</th></tr></thead>
+        <tbody>
+          <tr><td>&#49884;&#44592;</td><td>2016&#45380; 6&#50900; &#44277;&#44201;, 7&#50900; &#54616;&#46300;&#54252;&#53356;</td><td>2017&#45380; 7&#50900; 1&#52264; &#53448;&#52712;, 11&#50900; 2&#52264; &#46041;&#44208;</td></tr>
+          <tr><td>핵심 취약점</td><td>Reentrancy</td><td>초기화 함수, 접근제어, delegatecall</td></tr>
+          <tr><td>피해 형태</td><td>ETH가 child DAO로 이동한 탈취성 공격</td><td>1차 탈취, 2차 자금 동결</td></tr>
+          <tr><td>주요 실수</td><td>외부 호출 전에 잔액을 줄이지 않음</td><td>초기화 함수와 라이브러리 관리 실패</td></tr>
+          <tr><td>대표 교훈</td><td>Checks-Effects-Interactions</td><td>initializer, access control, 검증된 proxy/library 패턴</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="glossary">
+      <div class="section-title"><div class="section-number">9</div><h2>용어 정리와 참고자료</h2></div>
+      <div class="grid three">
+        <article class="card"><h3>Reentrancy</h3><p>함수가 끝나기 전에 외부 컨트랙트가 같은 함수를 다시 호출하는 공격 방식.</p></article>
+        <article class="card"><h3>Initializer</h3><p>배포 후 owner나 기본 설정을 넣는 함수. public/external일 수 있지만 반드시 한 번만 실행되고 재초기화가 막혀야 한다.</p></article>
+        <article class="card"><h3>delegatecall</h3><p>다른 컨트랙트의 코드를 빌려 실행하지만 storage는 호출자 쪽을 쓰는 저수준 호출.</p></article>
+      </div>
+      <div class="callout warning"><strong>교육용 단순화:</strong> 이 자료는 사건의 핵심 보안 원리를 설명하기 위한 단순화 모델이며, 실제 감사·투자·법률 조언이나 최신 메인넷 동작 보증이 아니다. 실무 적용 전 최신 Solidity, EVM, 라이브러리 문서와 전문 감사를 확인해야 한다.</div>
+      <div class="callout">
+        <strong>출처:</strong>
+        
+        <a href="https://blog.ethereum.org/2016/06/17/critical-update-re-dao-vulnerability" target="_blank" rel="noopener">Ethereum Foundation: DAO Vulnerability Update</a>,
+        <a href="https://blog.ethereum.org/2016/07/15/to-fork-or-not-to-fork" target="_blank" rel="noopener">Ethereum Foundation: To fork or not to fork</a>,
+        <a href="https://medium.com/paritytech/a-postmortem-on-the-parity-multi-sig-library-self-destruct-63daca3a4cf7" target="_blank" rel="noopener">Parity Technologies: Multi-Sig Library Self-Destruct Postmortem</a>,
+        <a href="https://www.openzeppelin.com/news/on-the-parity-wallet-multisig-hack-405a8c12e8f7" target="_blank" rel="noopener">OpenZeppelin: Parity Wallet Hack Explained</a>,
+        <a href="https://www.openzeppelin.com/news/parity-wallet-hack-reloaded" target="_blank" rel="noopener">OpenZeppelin: Parity Wallet Hack Reloaded</a>,
+        <a href="https://eips.ethereum.org/EIPS/eip-6780" target="_blank" rel="noopener">EIP-6780: SELFDESTRUCT only in same transaction</a>.
+      
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <strong>The DAO & Parity Wallet 개념 재연</strong>
+    <p>스마트컨트랙트 보안 강의자료 | 단일 파일 오프라인 HTML | 원본 Markdown: 이론보강/07_smart_contract_security_dao_parity.md</p>
+  </footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    function getTime() {
+      return new Date().toLocaleTimeString("ko-KR", { hour12: false });
+    }
+
+    function clearLog(logId) {
+      const log = $(logId);
+      if (log) log.textContent = "";
+    }
+
+    function addLog(logId, message, type = "info") {
+      const log = $(logId);
+      if (!log) return;
+      const row = document.createElement("div");
+      row.className = "tx-entry " + type;
+      const time = document.createElement("span");
+      time.className = "tx-time";
+      time.textContent = "[" + getTime() + "]";
+      const msg = document.createElement("span");
+      msg.textContent = " " + message;
+      row.append(time, msg);
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function setText(id, value) {
+      const node = $(id);
+      if (node) node.textContent = String(value);
+    }
+
+    function setClass(id, className) {
+      const node = $(id);
+      if (node) node.className = className;
+    }
+
+    function setBadge(id, text, tone) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = text;
+      const cell = el.closest('.state-cell');
+      if (cell) {
+        cell.classList.remove('ok', 'warn', 'danger');
+        cell.classList.add(tone || 'warn');
+      }
+    }
+
+    function flashStep(id, variant = "active", delay = 420) {
+      const node = $(id);
+      if (!node) return;
+      node.classList.add(variant);
+      window.setTimeout(() => node.classList.remove(variant), delay);
+    }
+
+    function clearChildren(id) {
+      const node = $(id);
+      if (!node) return;
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+
+    function pulseClass(id, className, delay = 520) {
+      const node = $(id);
+      if (!node) return;
+      node.classList.add(className);
+      window.setTimeout(() => node.classList.remove(className), delay);
+    }
+
+    function renderCallStack(depth, safeMode) {
+      const stack = $("re-call-stack");
+      if (!stack) return;
+      clearChildren("re-call-stack");
+      const capped = Math.min(depth, 6);
+      for (let i = 1; i <= capped; i += 1) {
+        const frame = document.createElement("div");
+        frame.className = "call-frame" + (safeMode ? " safe" : "");
+        frame.textContent = safeMode && i > 1 ? "blocked re-entry #" + i : "withdraw frame #" + i;
+        stack.appendChild(frame);
+      }
+      if (depth === 0) {
+        const frame = document.createElement("div");
+        frame.className = "call-frame safe";
+        frame.textContent = "call stack empty";
+        stack.appendChild(frame);
+      }
+    }
+
+    function updateReStage(label, tone) {
+      setText("re-vault-stack", reState.bank + " ETH");
+      setText("re-attacker-hold", reState.attacker + " ETH");
+      setText("re-beam-label", label);
+      const beam = $("re-beam");
+      if (beam) {
+        beam.className = "control-beam active " + tone;
+        scheduleReentrancyStep(() => { beam.className = "control-beam " + tone; }, 520, reRunToken);
+      }
+      if (tone === "good" || tone === "bad") pulseClass("re-vault-stack", tone === "good" ? "safe" : "drain");
+    }
+
+    function updateInitStage() {
+      setText("init-slot-owner-value", initState.owner);
+      setText("init-slot-init-value", String(initState.initialized));
+      const guarded = initState.guarded;
+      const captured = initState.owner === "0xBAD";
+      const key = $("init-owner-key");
+      if (key) key.className = "owner-key" + (captured ? " captured" : guarded ? " guarded" : "");
+      const ownerSlot = $("init-slot-owner");
+      if (ownerSlot) ownerSlot.className = "storage-slot" + (captured ? " changed" : guarded ? " safe" : "");
+      const initSlot = $("init-slot-init");
+      if (initSlot) initSlot.className = "storage-slot" + (initState.initialized ? guarded ? " safe" : " changed" : "");
+      const shield = $("init-guard-shield");
+      if (shield) shield.className = "guard-shield" + (guarded ? " on" : "");
+    }
+
+    function updateInitSummary() {
+      const ownerText = initState.owner ? initState.owner : 'none yet';
+      setBadge('init-owner-state', ownerText, initState.owner === '0xBAD' ? 'danger' : initState.owner === '0xTEAM' ? 'ok' : 'warn');
+      setBadge('init-initialized-state', initState.initialized ? 'true: second init should fail' : 'false: initializer can still set owner', initState.initialized ? 'ok' : 'warn');
+      const lateGuard = initState.deployed && initState.guarded && !initState.initialized;
+      setBadge('init-guard-state', lateGuard ? 'ON too late: reset and redeploy with guard' : initState.guarded ? 'ON before deploy: initialized blocks reuse' : 'OFF: public init can be reused', lateGuard ? 'warn' : initState.guarded ? 'ok' : 'danger');
+    }
+
+    function updateFreezeStage() {
+      const destroyed = !freezeState.code;
+      const ownerSet = freezeState.owner === "0xUSER" && freezeState.code;
+      const stage = $("freeze-stage");
+      if (stage) stage.className = "sim-stage3d dependency-stage" + (destroyed ? " broken" : "");
+      const core = $("freeze-core");
+      if (core) {
+        core.className = "library-core" + (destroyed ? " destroyed" : ownerSet ? " owner" : "");
+        core.textContent = destroyed ? "NO CODE" : ownerSet ? "OWNED" : "CODE";
+      }
+      ["orbit-wallet-a", "orbit-wallet-b", "orbit-wallet-c", "orbit-wallet-d"].forEach((id) => {
+        const node = $(id);
+        if (!node) return;
+        node.className = "orbit-wallet" + (destroyed ? " frozen" : "");
+        const name = node.textContent.split(":")[0];
+        node.textContent = name + (destroyed ? ": frozen" : ": execute ready");
+      });
+    }
+
+    function updateFreezeSummary() {
+      setBadge('freeze-funds-state', 'ETH remains in wallet account balance', 'ok');
+      setBadge('freeze-code-state', freezeState.code ? 'library callable' : 'library destroyed: code path missing', freezeState.code ? 'ok' : 'danger');
+      setBadge('freeze-execute-state', freezeState.code ? 'withdraw path still available' : 'withdraw path frozen although ETH exists', freezeState.code ? 'warn' : 'danger');
+    }
+
+    let reState = { bank: 8, attacker: 0, ledger: 1, count: 0 };
+    let reRunToken = 0;
+    let reTimers = [];
+
+    function clearReentrancyTimers() {
+      reTimers.forEach((timer) => window.clearTimeout(timer));
+      reTimers = [];
+    }
+
+    function scheduleReentrancyStep(callback, delay, token) {
+      const timer = window.setTimeout(() => {
+        if (token !== reRunToken) return;
+        callback();
+      }, delay);
+      reTimers.push(timer);
+    }
+
+    function resetReentrancy() {
+      reRunToken += 1;
+      clearReentrancyTimers();
+      reState = { bank: 8, attacker: 0, ledger: 1, count: 0 };
+      setText("re-bank", reState.bank);
+      setText("re-attacker", reState.attacker);
+      setText("re-ledger", reState.ledger);
+      setText("re-count", reState.count);
+      renderCallStack(0, $("re-mode") && $("re-mode").value === "safe");
+      updateReStage("대기: withdraw 호출 전", "info");
+      clearLog("re-log");
+      addLog("re-log", "초기 상태: 공격자는 장부상 1 ETH를 맡겼고 은행에는 8 ETH가 있다.", "info");
+    }
+
+    function updateReMode() {
+      const mode = $("re-mode").value;
+      const label = $("re-mode-label");
+      label.textContent = mode === "safe" ? "안전 모드" : "취약 모드";
+      label.className = "badge " + (mode === "safe" ? "good" : "bad");
+    }
+
+    function runReentrancy() {
+      resetReentrancy();
+      const mode = $("re-mode").value;
+      const maxDepth = Number($("re-depth").value);
+      updateReMode();
+      const runToken = reRunToken;
+      addLog("re-log", mode === "safe" ? "안전 모드: 장부를 먼저 줄이고 ETH를 보낸다." : "취약 모드: ETH를 먼저 보내고 장부를 나중에 줄인다.", mode === "safe" ? "good" : "bad");
+      flashStep("re-step-check", "active");
+      renderCallStack(1, mode === "safe");
+      updateReStage(mode === "safe" ? "Checks -> Effects -> Interactions" : "Checks -> Interactions 먼저 실행", mode === "safe" ? "good" : "bad");
+
+      let delay = 250;
+      for (let i = 1; i <= maxDepth; i += 1) {
+        scheduleReentrancyStep(() => {
+          if (mode === "safe") {
+            if (i === 1 && reState.ledger >= 1) {
+              flashStep("re-step-effect", "good");
+              reState.ledger -= 1;
+              setText("re-ledger", reState.ledger);
+              addLog("re-log", "Effects: 잔액을 먼저 0으로 줄였다.", "good");
+              flashStep("re-step-interact", "active");
+              reState.bank -= 1;
+              reState.attacker += 1;
+              setText("re-bank", reState.bank);
+              setText("re-attacker", reState.attacker);
+              addLog("re-log", `State trace: bank=${reState.bank}, attacker=${reState.attacker}, ledger=${reState.ledger}. CEI changed ledger before receive() could re-enter.`, "info");
+              renderCallStack(i, true);
+              updateReStage("Effects가 먼저 끝나 재진입이 막힘", "good");
+              addLog("re-log", "Interactions: 1 ETH 전송. receive()가 다시 들어와도 장부 잔액은 이미 0이다.", "good");
+            } else {
+              renderCallStack(i, true);
+              updateReStage("재호출 차단: ledger가 0", "good");
+              addLog("re-log", "재진입 시도 " + i + ": require(balances[msg.sender] >= amount) 실패.", "bad");
+            }
+            return;
+          }
+
+          if (reState.bank <= 0) {
+            addLog("re-log", "은행 잔액이 부족해 더 이상 전송할 수 없다.", "bad");
+            return;
+          }
+
+          if (reState.ledger >= 1) {
+            flashStep("re-step-interact", "bad");
+            reState.bank -= 1;
+            reState.attacker += 1;
+            reState.count += 1;
+            setText("re-bank", reState.bank);
+            setText("re-attacker", reState.attacker);
+            setText("re-count", reState.count);
+            addLog("re-log", `State trace: bank=${reState.bank}, attacker=${reState.attacker}, ledger=${reState.ledger}. The old ledger value is still visible during the nested call.`, "info");
+            renderCallStack(i, false);
+            updateReStage("receive()가 withdraw를 다시 호출 #" + i, "bad");
+            addLog("re-log", "재진입 " + i + ": 장부 차감 전이므로 1 ETH가 또 전송됨.", "bad");
+          }
+        }, delay, runToken);
+        delay += 520;
+      }
+
+      scheduleReentrancyStep(() => {
+        if (mode === "vulnerable") {
+          flashStep("re-step-effect", "bad", 800);
+          reState.ledger = 0;
+          setText("re-ledger", reState.ledger);
+          updateReStage("마지막에야 ledger 0으로 기록", "bad");
+          addLog("re-log", "마지막에야 Effects 실행: 장부는 0이 되었지만 이미 " + reState.count + " ETH가 빠져나갔다.", "bad");
+        }
+      }, delay + 120, runToken);
+    }
+
+    let initState = { deployed: false, owner: "미설정", initialized: false, guarded: false };
+
+    function resetInit() {
+      initState = { deployed: false, owner: "미설정", initialized: false, guarded: false };
+      setText("wallet-owner", initState.owner);
+      setText("wallet-initialized", "false");
+      setText("init-status", "unlocked init");
+      $("init-status").className = "badge bad";
+      setClass("box-wallet", "wallet-box active");
+      setClass("box-library", "wallet-box");
+      setClass("box-attacker", "wallet-box");
+      updateInitStage();
+      updateInitSummary();
+      clearLog("init-log");
+      addLog("init-log", "초기 상태: 지갑이 아직 배포되지 않았다.", "info");
+    }
+
+    function deployWallet() {
+      initState.deployed = true;
+      initState.owner = "0xTEAM";
+      initState.initialized = initState.guarded;
+      setText("wallet-owner", initState.owner);
+      setText("wallet-initialized", String(initState.initialized));
+      setClass("box-wallet", "wallet-box good");
+      updateInitStage();
+      updateInitSummary();
+      addLog("init-log", initState.guarded ? "방어 모드 배포: owner=0xTEAM, initialized=true." : "취약 모드 배포: owner=0xTEAM이지만 initWallet이 다시 열려 있다.", initState.guarded ? "good" : "bad");
+    }
+
+    function attackerInit() {
+      if (!initState.deployed) deployWallet();
+      setClass("box-library", "wallet-box active");
+      if (initState.guarded && initState.initialized) {
+        setClass("box-attacker", "wallet-box bad");
+        updateInitStage();
+      updateInitSummary();
+        addLog("init-log", "공격자 initWallet([0xBAD]) 실패: initializer가 이미 실행되어 있다.", "good");
+        return;
+      }
+      initState.owner = "0xBAD";
+      initState.initialized = true;
+      setText("wallet-owner", initState.owner);
+      setText("wallet-initialized", "true");
+      setClass("box-attacker", "wallet-box bad active");
+      updateInitStage();
+      updateInitSummary();
+      addLog("init-log", "공격 성공: public initWallet이 지갑 storage의 owner를 0xBAD로 바꿨다.", "bad");
+      addLog("init-log", "이제 공격자는 owner 권한으로 execute(to, value)를 호출할 수 있다.", "bad");
+    }
+
+    function toggleGuard() {
+      initState.guarded = !initState.guarded;
+      setText("init-status", initState.guarded ? "initializer guard ON" : "unlocked init");
+      $("init-status").className = "badge " + (initState.guarded ? "good" : "bad");
+      updateInitStage();
+      updateInitSummary();
+      if (initState.deployed && initState.guarded && !initState.initialized) {
+        addLog("init-log", "주의: 이미 배포된 지갑에는 guard가 소급 적용되지 않는다. 초기화 후 guard를 켜고 다시 배포해야 비교가 정확하다.", "info");
+        return;
+      }
+      addLog("init-log", initState.guarded ? "방어 활성화: 다음 배포부터 initWallet은 한 번만 실행된다." : "방어 해제: initWallet 재호출 위험이 있다.", initState.guarded ? "good" : "bad");
+    }
+
+    let delegateActive = false;
+
+    function resetDelegate() {
+      delegateActive = false;
+      clearLog("delegate-log");
+      setText("delegate-status", "대기");
+      $("delegate-status").className = "badge info";
+      setText("delegate-code-owner", "Library code is selected by delegatecall.");
+      setText("delegate-storage-owner", "Wallet storage is still the write target.");
+      drawDelegate(false);
+      addLog("delegate-log", "delegatecall 대기: Library 코드는 Wallet storage를 수정할 수 있다.", "info");
+    }
+
+    function drawDelegate(active) {
+      const canvas = $("delegate-canvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#06101d";
+      ctx.fillRect(0, 0, w, h);
+      drawBox(ctx, 40, 52, 250, 146, "Wallet Contract", ["storage slot 0: owner", "storage slot 1: initialized"], active ? "#22c55e" : "#38bdf8");
+      drawBox(ctx, 610, 52, 250, 146, "Library Code", ["function initWallet()", "owners = _owners"], "#fbbf24");
+      ctx.strokeStyle = active ? "#fb7185" : "#38bdf8";
+      ctx.lineWidth = active ? 5 : 3;
+      ctx.beginPath();
+      ctx.moveTo(610, 124);
+      ctx.bezierCurveTo(500, 40, 400, 210, 290, 124);
+      ctx.stroke();
+      ctx.fillStyle = active ? "#fb7185" : "#38bdf8";
+      ctx.beginPath();
+      ctx.moveTo(294, 124);
+      ctx.lineTo(314, 113);
+      ctx.lineTo(314, 135);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#e5f0ff";
+      ctx.font = "700 18px Segoe UI";
+      ctx.fillText(active ? "owner slot changed in Wallet storage" : "delegatecall path", 330, 232);
+    }
+
+    function drawBox(ctx, x, y, width, height, title, lines, color) {
+      ctx.fillStyle = "rgba(15, 31, 51, 0.96)";
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, width, height, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.font = "800 20px Segoe UI";
+      ctx.fillText(title, x + 18, y + 36);
+      ctx.fillStyle = "#96abc7";
+      ctx.font = "15px Consolas";
+      lines.forEach((line, index) => ctx.fillText(line, x + 18, y + 72 + index * 28));
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + width, y, x + width, y + height, radius);
+      ctx.arcTo(x + width, y + height, x, y + height, radius);
+      ctx.arcTo(x, y + height, x, y, radius);
+      ctx.arcTo(x, y, x + width, y, radius);
+      ctx.closePath();
+    }
+
+    function runDelegate() {
+      delegateActive = true;
+      setText("delegate-status", "owner slot 변경");
+      $("delegate-status").className = "badge bad";
+      setText("delegate-code-owner", "Library code executed initWallet-style logic.");
+      setText("delegate-storage-owner", "Wallet slot[0] changed because delegatecall keeps caller storage.");
+      drawDelegate(true);
+      addLog("delegate-log", "Wallet이 Library의 initWallet 코드를 delegatecall로 실행했다.", "info");
+      addLog("delegate-log", "중요: 바뀐 것은 Library storage가 아니라 Wallet storage의 owner 슬롯이다.", "bad");
+    }
+
+    let freezeState = { owner: "none", code: true };
+
+    function resetFreeze() {
+      freezeState = { owner: "none", code: true };
+      setText("lib-code", "exists");
+      setText("lib-owner", "none");
+      setText("freeze-status", "library alive");
+      $("freeze-status").className = "badge info";
+      setClass("lib-node", "freeze-node active");
+      setClass("wallet-a", "freeze-node good");
+      setClass("wallet-b", "freeze-node good");
+      document.querySelectorAll(".wallet-state").forEach((node) => { node.textContent = "작동 가능"; });
+      updateFreezeStage();
+      updateFreezeSummary();
+      clearLog("freeze-log");
+      addLog("freeze-log", "초기 상태: Wallet A/B는 Shared Library 코드를 보고 작동한다.", "info");
+    }
+
+    function freezeInit() {
+      if (!freezeState.code) {
+        addLog("freeze-log", "이미 library code가 사라져 init도 실행할 수 없다.", "bad");
+        return;
+      }
+      freezeState.owner = "0xUSER";
+      setText("lib-owner", freezeState.owner);
+      setClass("lib-node", "freeze-node bad active");
+      updateFreezeStage();
+      updateFreezeSummary();
+      addLog("freeze-log", "사용자가 library init()을 직접 호출해 library owner가 되었다.", "bad");
+    }
+
+    function freezeKill() {
+      if (freezeState.owner !== "0xUSER") {
+        addLog("freeze-log", "kill() 실패: 먼저 library owner가 되어야 한다.", "info");
+        return;
+      }
+      freezeState.code = false;
+      setText("lib-code", "removed");
+      setText("freeze-status", "library destroyed");
+      $("freeze-status").className = "badge bad";
+      setClass("lib-node", "freeze-node bad active");
+      setClass("wallet-a", "freeze-node bad");
+      setClass("wallet-b", "freeze-node bad");
+      document.querySelectorAll(".wallet-state").forEach((node) => { node.textContent = "기능 마비"; });
+      updateFreezeStage();
+      updateFreezeSummary();
+      addLog("freeze-log", "2017년 당시 EVM 동작 기준으로 selfdestruct가 공유 라이브러리 코드를 제거했다.", "bad");
+      addLog("freeze-log", "여러 지갑이 같은 라이브러리에 의존했기 때문에 동시에 기능을 잃는다.", "bad");
+    }
+
+    function freezeWithdraw() {
+      if (freezeState.code) {
+        updateFreezeStage();
+      updateFreezeSummary();
+        addLog("freeze-log", "출금 성공: library code가 아직 존재하므로 wallet execute가 작동한다.", "good");
+        return;
+      }
+      updateFreezeStage();
+      updateFreezeSummary();
+      addLog("freeze-log", "출금 실패: delegatecall 대상 코드가 없어 지갑 로직을 실행할 수 없다. 자금은 지갑 안에 동결된다.", "bad");
+    }
+
+    function resizeCanvas() {
+      drawDelegate(delegateActive);
+    }
+
+    window.addEventListener("load", () => {
+      $("re-depth").addEventListener("input", () => setText("re-depth-label", $("re-depth").value + "회"));
+      $("re-mode").addEventListener("change", updateReMode);
+      $("run-reentrancy").addEventListener("click", runReentrancy);
+      $("reset-reentrancy").addEventListener("click", resetReentrancy);
+      $("deploy-wallet").addEventListener("click", deployWallet);
+      $("attacker-init").addEventListener("click", attackerInit);
+      $("toggle-guard").addEventListener("click", toggleGuard);
+      $("reset-init").addEventListener("click", resetInit);
+      $("run-delegate").addEventListener("click", runDelegate);
+      $("reset-delegate").addEventListener("click", resetDelegate);
+      $("freeze-init").addEventListener("click", freezeInit);
+      $("freeze-kill").addEventListener("click", freezeKill);
+      $("freeze-withdraw").addEventListener("click", freezeWithdraw);
+      $("reset-freeze").addEventListener("click", resetFreeze);
+
+      resetReentrancy();
+      resetInit();
+      resetDelegate();
+      resetFreeze();
+    });
+
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(resizeCanvas, 120);
+    });
+  </script>
+</body>
+</html>
